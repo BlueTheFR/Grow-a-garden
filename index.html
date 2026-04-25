@@ -38,11 +38,11 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
   border-radius:3px; cursor:none;
   display:flex; align-items:center; justify-content:center;
   position:relative; overflow:visible;
-  transition:border-color 0.15s, box-shadow 0.15s;
 }
 .plot:hover { border-color:#888; }
 .plot.ready { border-color:#3d3; box-shadow:0 0 4px #3d3; }
 .plot.fav-plot { border-color:#f33 !important; }
+.plot.move-hover { border-color:#fa0 !important; box-shadow:0 0 6px #fa0; }
 
 /* mutation box-shadows stack via filter on children; plot border changes */
 .plot .plant-wrap { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; height:100%; gap:0; padding:2px 2px 0; position:relative; overflow:hidden; }
@@ -84,6 +84,8 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 .sell-row .srv { color:#f84; font-size:9px; }
 #sell-all-btn { background:#900; color:#fcc; border:none; border-top:1px solid #700; padding:5px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:bold; }
 #sell-all-btn:hover { background:#b00; }
+.sell-row .sell-plant-btn { background:#500; border:1px solid #a00; color:#faa; font-size:8px; padding:1px 4px; border-radius:2px; cursor:pointer; font-family:inherit; flex-shrink:0; white-space:nowrap; }
+.sell-row .sell-plant-btn:hover { background:#700; }
 
 /* ── RIGHT PANEL ── */
 #weather-row { padding:4px 8px 2px; font-size:11px; color:#aaa; }
@@ -108,6 +110,11 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 #fav-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 10px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; }
 #fav-btn:hover { background:#252525; }
 #fav-btn.on { border-color:#f44; color:#f88; }
+#move-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 10px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; }
+#move-btn:hover { background:#252525; }
+#move-btn.on { border-color:#fa0; color:#fc6; }
+#harvest-all-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 8px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; }
+#harvest-all-btn:hover { background:#252525; color:#afa; }
 #top-info { font-size:10px; color:#555; }
 
 /* ── BOTTOM BAR ── */
@@ -197,11 +204,11 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 
 <div id="right-panel">
   <div id="weather-row">☁ <span id="wx-name">Clear</span></div>
-  <div id="wx-timer-row">Next: <span id="wx-timer">10:00</span></div>
-  <div id="daytime-row">🌞 <span id="day-lbl">Day 1</span> &nbsp;<span id="time-lbl">06:00</span></div>
+  <div id="wx-timer-row"><span id="wx-timer-label">Next: </span><span id="wx-timer">10:00</span></div>
+  <div id="daytime-row"><span id="day-lbl">🌞 Day 1</span> &nbsp;<span id="time-lbl">06:00</span></div>
   <div id="seed-shop">
     <div class="shop-hdr" id="seed-hdr">
-      <span>🔵 SEED SHOP</span>
+      <span id="seed-shop-title">🔵 SEED SHOP</span>
       <span id="restock-time">5:00</span>
     </div>
     <div id="seed-body"></div>
@@ -211,7 +218,9 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 
 <div id="top-bar">
   <button id="fav-btn">♡ Favorite</button>
-  <span id="top-info">50 plots · click plot to plant/harvest · F=favorite mode</span>
+  <button id="move-btn">↕ Move</button>
+  <button id="harvest-all-btn">🌾 Harvest All</button>
+  <span id="top-info">50 plots · click to plant/harvest · F=favorite</span>
 </div>
 
 <div id="map-area">
@@ -250,7 +259,6 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 /* ═══════════════════════════════════════
    DATA
 ═══════════════════════════════════════ */
-const SAVE_KEY='gar_v5';
 
 /* ═══════════════════════════════════════
    I18N — French if navigator.language starts with 'fr', else English
@@ -356,8 +364,8 @@ const SEEDS=[
   {id:'carrot',      name:IS_FR?'Carotte'       :'Carrot',       icon:'🥕', seedIcon:'🌱', rarity:'common',    price:10,    grow:30,  base:15,    multiHarvest:false},
   {id:'potato',      name:IS_FR?'Pomme de terre' :'Potato',       icon:'🥔', seedIcon:'🌱', rarity:'common',    price:50,    grow:35,  base:25,    multiHarvest:true },
   {id:'tomato',      name:IS_FR?'Tomate'         :'Tomato',       icon:'🍅', seedIcon:'🌿', rarity:'common',    price:150,   grow:40,  base:30,    multiHarvest:true },
-  {id:'lettuce',     name:IS_FR?'Laitue'         :'Lettuce',      icon:'🥬', seedIcon:'🌱', rarity:'common',    price:200,    grow:45,  base:34,    multiHarvest:true },
-  {id:'pepper',      name:IS_FR?'Piment'         :'Pepper',       icon:'🌶', seedIcon:'🌿', rarity:'common',    price:250,   grow:50,  base:46,    multiHarvest:true },
+  {id:'lettuce',     name:IS_FR?'Laitue'         :'Lettuce',      icon:'🥬', seedIcon:'🌱', rarity:'common',    price:200,   grow:45,  base:34,    multiHarvest:true },
+  {id:'pepper',      name:IS_FR?'Poivrons'         :'Pepper',       icon:'🫑', seedIcon:'🌿', rarity:'common',    price:250,   grow:50,  base:46,    multiHarvest:true },
   // ── UNCOMMON ──
   {id:'corn',        name:IS_FR?'Maïs'           :'Corn',         icon:'🌽', seedIcon:'🌿', rarity:'uncommon',  price:300,   grow:60,  base:50,    multiHarvest:true },
   {id:'strawberry',  name:IS_FR?'Fraise'         :'Strawberry',   icon:'🍓', seedIcon:'🌿', rarity:'uncommon',  price:400,   grow:65,  base:69,    multiHarvest:true },
@@ -368,7 +376,7 @@ const SEEDS=[
   {id:'blueberry',   name:IS_FR?'Myrtille'       :'Blueberry',    icon:'🫐', seedIcon:'🌳', rarity:'rare',      price:800,   grow:100, base:130,   multiHarvest:true },
   {id:'watermelon',  name:IS_FR?'Pastèque'       :'Watermelon',   icon:'🍉', seedIcon:'🌳', rarity:'rare',      price:1000,  grow:120, base:150,   multiHarvest:true },
   {id:'cherry',      name:IS_FR?'Cerise'         :'Cherry',       icon:'🍒', seedIcon:'🌳', rarity:'rare',      price:1200,  grow:125, base:170,   multiHarvest:true },
-  {id:'grape',       name:IS_FR?'Raisin'         :'Grape',        icon:'🍇', seedIcon:'🌳', rarity:'rare',      price:1300,   grow:130, base:185,   multiHarvest:true },
+  {id:'grape',       name:IS_FR?'Raisin'         :'Grape',        icon:'🍇', seedIcon:'🌳', rarity:'rare',      price:1300,  grow:130, base:185,   multiHarvest:true },
   {id:'coconut',     name:IS_FR?'Noix de coco'   :'Coconut',      icon:'🥥', seedIcon:'🌴', rarity:'rare',      price:1500,  grow:135, base:220,   multiHarvest:true },
   // ── EPIC ──
   {id:'pineapple',   name:IS_FR?'Ananas'         :'Pineapple',    icon:'🍍', seedIcon:'🌴', rarity:'epic',      price:2500,  grow:180, base:450,   multiHarvest:true },
@@ -376,41 +384,42 @@ const SEEDS=[
   {id:'kiwi',        name:IS_FR?'Kiwi'           :'Kiwi',         icon:'🥝', seedIcon:'🌴', rarity:'epic',      price:3500,  grow:210, base:580,   multiHarvest:true },
   {id:'lemon',       name:IS_FR?'Citron'         :'Lemon',        icon:'🍋', seedIcon:'🌴', rarity:'epic',      price:5200,  grow:250, base:624,   multiHarvest:true },
   // ── LEGENDARY ──
-  {id:'dragonfruit', name:IS_FR?'Fruit du dragon':'Dragon Fruit',  icon:'🍈', seedIcon:'🌴', rarity:'legendary', price:8800,  grow:360, base:1600,  multiHarvest:true },
+  {id:'Apple', 		 name:IS_FR?'Pomme'			 :'Apple',  	  icon:'🍎', seedIcon:'🌴', rarity:'legendary', price:8800,  grow:360, base:1600,  multiHarvest:true },
   {id:'cacao',       name:IS_FR?'Cacao'          :'Cacao',        icon:'🍫', seedIcon:'🌴', rarity:'legendary', price:10000, grow:420, base:2200,  multiHarvest:true },
-  {id:'durian',      name:IS_FR?'Durian'         :'Durian',       icon:'🌵', seedIcon:'🌴', rarity:'legendary', price:15000, grow:500, base:3000,  multiHarvest:true },
+  {id:'durian',      name:IS_FR?'Durian'         :'Durian',       icon:'🍈', seedIcon:'🌴', rarity:'legendary', price:15000, grow:500, base:3000,  multiHarvest:true },
 ];
 
 const SIZES=[
-  {id:'tiny',  label:'Tiny',  mult:0.5 },
-  {id:'small', label:'Small', mult:0.75},
-  {id:'normal',label:'Normal',mult:1   },
-  {id:'big',   label:'Big',   mult:1.5 },
-  {id:'huge',  label:'Huge',  mult:2   },
+  {id:'tiny',  label:()=>T.sTiny,   mult:0.5 },
+  {id:'small', label:()=>T.sSmall,  mult:0.75},
+  {id:'normal',label:()=>T.sNormal, mult:1   },
+  {id:'big',   label:()=>T.sBig,    mult:1.5 },
+  {id:'huge',  label:()=>T.sHuge,   mult:2   },
 ];
 
+// Rarity color map
+const RARITY_COLOR={common:'#aaa',uncommon:'#4e4',rare:'#55f',epic:'#a4f',legendary:'#fa3'};
+
 // Weather: active=5min, then clear=5min, total cycle=10min
-// During active weather, every 10s: 10% mutation chance
-// mut is the mutation name it applies
 const WEATHERS=[
-  {id:'clear',   name:'Clear',   emoji:'☀', mut:null,       col:null,   glowColor:null    },
-  {id:'rain',    name:'Rain',    emoji:'🌧',mut:'hydrated',  col:'#4af', glowColor:'#4af'  },
-  {id:'storm',   name:'Storm',   emoji:'⛈',mut:'stormy',    col:'#a4f', glowColor:'#a4f'  },
-  {id:'fog',     name:'Fog',     emoji:'🌫',mut:'misty',     col:'#aaa', glowColor:'#aaa'  },
-  {id:'frost',   name:'Frost',   emoji:'❄', mut:'frosty',   col:'#4ff', glowColor:'#4ff'  },
-  {id:'heatwave',name:'Heatwave',emoji:'🔥',mut:'scorched',  col:'#f84', glowColor:'#f84'  },
-  {id:'rainbow', name:'Rainbow', emoji:'🌈',mut:'rainbow',   col:'#f4a', glowColor:'#f4a'  },
+  {id:'clear',   name:()=>T.wClear,  emoji:'☀', mut:null,       col:null,   glowColor:null    },
+  {id:'rain',    name:()=>T.wRain,   emoji:'🌧',mut:'hydrated',  col:'#4af', glowColor:'#4af'  },
+  {id:'storm',   name:()=>T.wStorm,  emoji:'⛈',mut:'stormy',    col:'#a4f', glowColor:'#a4f'  },
+  {id:'fog',     name:()=>T.wFog,    emoji:'🌫',mut:'misty',     col:'#aaa', glowColor:'#aaa'  },
+  {id:'frost',   name:()=>T.wFrost,  emoji:'❄', mut:'frosty',   col:'#4ff', glowColor:'#4ff'  },
+  {id:'heatwave',name:()=>T.wHeat,   emoji:'🔥',mut:'scorched',  col:'#f84', glowColor:'#f84'  },
+  {id:'rainbow', name:()=>T.wRainbow,emoji:'🌈',mut:'rainbow',   col:'#f4a', glowColor:'#f4a'  },
 ];
 
 // Mutation info: icon + multiplier + glow
 const MUT_DATA={
-  moonlit:  {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)', label:'Moonlit'},
-  rainbow:  {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)',label:'Rainbow'},
-  scorched: {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)', label:'Scorched'},
-  frosty:   {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)', label:'Frosty'},
-  stormy:   {icon:'⚡',mult:100, glow:'rgba(170,50,255,0.55)',label:'Stormy'},
-  hydrated: {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)', label:'Hydrated'},
-  misty:    {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)',label:'Misty'},
+  moonlit:  {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)',  label:()=>T.mMoonlit },
+  rainbow:  {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)', label:()=>T.mRainbow },
+  scorched: {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)',  label:()=>T.mScorched},
+  frosty:   {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)',  label:()=>T.mFrosty  },
+  stormy:   {icon:'⚡',mult:100, glow:'rgba(170,50,255,0.55)', label:()=>T.mStormy  },
+  hydrated: {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated},
+  misty:    {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty   },
 };
 
 /* ═══════════════════════════════════════
@@ -419,18 +428,58 @@ const MUT_DATA={
 let G={
   money:50, day:1, tod:0, isNight:false,
   weather:WEATHERS[0],
-  wxActive:false,      // is weather effect currently active?
-  wxDuration:0,        // seconds remaining in current phase
-  wxCycleNext:600,     // next weather check (10 min)
-  mutTimer:0,          // counts to 10s for mutation tick
+  wxActive:false,
+  wxDuration:0,
+  wxCycleNext:600,
+  mutTimer:0,
   shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
   inv:[], bar:Array(10).fill(null), selSlot:null,
-  favMode:false, musicOn:true, sfxOn:true, partOn:true,
+  favMode:false, moveMode:false, moveSrc:null,
+  musicOn:true, sfxOn:true, partOn:true,
 };
 
-/* ═══════════════════════════════════════
-   SAVE / LOAD
-═══════════════════════════════════════ */
+const SAVE_KEY='gar_v6';
+
+/* sell plant on plot for base value (no mutations bonus) */
+function sellPlot(idx){
+  const plot=G.plots[idx];if(!plot.plant)return;
+  const p=plot.plant;
+  if(p.fav){notify(T.notifUnfav);return;}
+  const sd=SEEDS.find(s=>s.id===p.seedId);
+  G.money+=sd.base;
+  notify((IS_FR?'💰 Vendu parcelle : ':'💰 Plot sold: ')+sd.name+' +$'+sd.base);
+  plot.plant=null;
+  renderAll();save();
+}
+
+/* harvest all ready non-favorited plants */
+function harvestAll(){
+  let count=0;
+  G.plots.forEach((plot,idx)=>{
+    if(plot.plant&&plot.plant.done&&!plot.plant.fav){harvestPlot(idx);count++;}
+  });
+  if(count>0)notify((IS_FR?'🌾 Récolté : ':'🌾 Harvested: ')+count+(IS_FR?' plantes':' plants'));
+}
+
+/* move mode: click source then destination */
+function handleMoveClick(idx){
+  const plot=G.plots[idx];
+  if(G.moveSrc===null){
+    // Pick source — must have a plant (favorited ok for move)
+    if(!plot.plant){notify(IS_FR?'❌ Pas de plante ici':'❌ No plant here');return;}
+    G.moveSrc=idx;
+    notify(IS_FR?'↕ Cliquez la destination':'↕ Click destination plot');
+    renderPlots();
+  } else {
+    if(G.moveSrc===idx){G.moveSrc=null;renderPlots();return;}
+    // Swap plants between moveSrc and idx
+    const tmp=G.plots[G.moveSrc].plant;
+    G.plots[G.moveSrc].plant=plot.plant;
+    plot.plant=tmp;
+    G.moveSrc=null;
+    renderPlots();save();
+  }
+}
 function save(){try{G._ts=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
 function load(){
   try{
@@ -439,7 +488,7 @@ function load(){
     const el=s._ts?Math.floor((Date.now()-s._ts)/1000):0;
     if(s.plots&&el>0)s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
     Object.assign(G,s);G._ts=undefined;
-    if(el>0)notify('🌙 Back! Offline growth ('+el+'s) applied');
+    if(el>0)notify(T.notifBack+' ('+el+'s)');
   }catch(e){}
 }
 
@@ -454,7 +503,7 @@ function restock(){
     const c={common:0.6,uncommon:0.35,rare:0.2,epic:0.1,legendary:0.04}[sd.rarity]||0.1;
     item.extra=Math.random()<c?1+Math.floor(Math.random()*4):0;
   });
-  notify('🛒 Shop Restocked!');sfx('restock');renderSeedShop();
+  notify(T.notifRestock);sfx('restock');renderSeedShop();
 }
 
 /* ═══════════════════════════════════════
@@ -512,7 +561,7 @@ function plantPlot(idx){
 function harvestPlot(idx){
   const plot=G.plots[idx];if(!plot.plant||!plot.plant.done)return;
   const p=plot.plant;
-  if(p.fav){notify('♥ Unfavorite to harvest');return;}
+  if(p.fav){notify(T.notifUnfav);return;}
   const sd=SEEDS.find(s=>s.id===p.seedId);
   const{val}=calcVal(p);
   addInv({type:'crop',seedId:p.seedId,icon:sd.icon,name:sd.name,val,muts:p.muts,size:p.size,fav:false});
@@ -541,12 +590,12 @@ function sellAll(){
   let earned=0;
   G.inv=G.inv.filter(i=>{if(i.type==='crop'&&!i.fav){earned+=i.val*i.qty;return false;}return true;});
   G.bar=G.bar.map(b=>(b!==null&&G.inv[b])?b:null);
-  G.money+=earned;if(earned>0)notify('💰 Sold for $'+earned.toLocaleString()+'!');
+  G.money+=earned;if(earned>0)notify(T.notifSold+earned.toLocaleString()+'!');
   renderAll();save();
 }
 function sellOne(idx){
-  const item=G.inv[idx];if(!item||item.type!=='crop'||item.fav){notify('♥ Unfavorite first');return;}
-  G.money+=item.val*item.qty;notify('💰 Sold '+item.name+' $'+(item.val*item.qty).toLocaleString());
+  const item=G.inv[idx];if(!item||item.type!=='crop'||item.fav){notify(T.notifUnfavFirst);return;}
+  G.money+=item.val*item.qty;notify(T.notifSoldOne+item.name+' $'+(item.val*item.qty).toLocaleString());
   G.inv.splice(idx,1);G.bar=G.bar.map(b=>b===idx?null:(b>idx?b-1:b));
   renderAll();save();
 }
@@ -556,15 +605,15 @@ function sellOne(idx){
 ═══════════════════════════════════════ */
 function buySeed(sid){
   const sd=SEEDS.find(s=>s.id===sid);if(!sd)return;
-  if(G.money<sd.price){notify('❌ Not enough money');return;}
+  if(G.money<sd.price){notify(T.notifNoMoney);return;}
   const si=G.shop.find(s=>s.id===sid);
-  if((si.qty+si.extra)<=0){notify('❌ Out of stock');return;}
+  if((si.qty+si.extra)<=0){notify(T.notifNoStock);return;}
   G.money-=sd.price;
   if(si.qty>0)si.qty--;else si.extra--;
-  addInv({type:'seed',seedId:sd.id,icon:sd.icon,name:sd.name+' Seed'});
+  addInv({type:'seed',seedId:sd.id,icon:sd.icon,name:sd.name+(IS_FR?' Graine':' Seed')});
   const empty=G.bar.findIndex(b=>b===null);
   if(empty>=0){const ii=seedInvIdx(sd.id);if(ii>=0&&!G.bar.includes(ii))G.bar[empty]=ii;}
-  sfx('buy');notify('🌱 Bought '+sd.name+' Seed');renderAll();save();
+  sfx('buy');notify(T.notifBought+sd.name+(IS_FR?' Graine':' Seed'));renderAll();save();
 }
 
 /* ═══════════════════════════════════════
@@ -577,8 +626,8 @@ function sfx(type){
   try{
     const ctx=getACtx(),o=ctx.createOscillator(),g=ctx.createGain();
     o.connect(g);g.connect(ctx.destination);
-    const T={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth'],lightning:[120,0.3,'sawtooth']};
-    const[f,v,tp]=T[type]||[440,0.07,'sine'];
+    const SFX={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth']};
+    const[f,v,tp]=SFX[type]||[440,0.07,'sine'];
     o.type=tp;o.frequency.value=f;
     g.gain.setValueAtTime(v,ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
@@ -641,7 +690,7 @@ let lightningTimer=0, nextLightningTime=3+Math.random()*4;
 function setWeather(w, active){
   G.weather=w;
   G.wxActive=active;
-  document.getElementById('wx-name').textContent=w.emoji+' '+w.name+(active?'':' (clearing)');
+  document.getElementById('wx-name').textContent=w.emoji+' '+w.name()+(active?'':(IS_FR?' (accalmie)':' (clearing)'));
   parts=[];
   lightningTimer=0; nextLightningTime=2+Math.random()*4;
   if(G.partOn&&active) spawnWeatherParts(w);
@@ -734,7 +783,7 @@ function doLightningStrike(targetPlotEl){
   if(!G.partOn)return;
   const fl=document.getElementById('lightning-flash');
   fl.classList.add('strike');
-  sfx('lightning');
+  // No sound — removed to avoid headache
   setTimeout(()=>fl.classList.remove('strike'),80);
 
   // draw bolt on weather canvas
@@ -780,36 +829,46 @@ function drawLightningBolt(ctx,x1,y1,x2,y2){
 ═══════════════════════════════════════ */
 function applyMutation(plant, mutName){
   if(!plant.muts)plant.muts=[];
-  if(!plant.muts.includes(mutName))plant.muts.push(mutName);
+  // Don't add if already has this mutation
+  if(plant.muts.includes(mutName))return false;
+  plant.muts.push(mutName);
+  return true;
 }
 
 function tryMutate(){
-  // Only mutate during active weather phase, not during clear downtime
   if(!G.wxActive||!G.weather.mut)return;
   if(Math.random()>0.1)return;
-  const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
-  const plotIdx=Math.floor(Math.random()*alive.length);
-  const plot=alive[plotIdx];
+  // Only pick plants that DON'T already have this mutation
   const mutName=G.weather.mut;
-  applyMutation(plot.plant,mutName);
+  const eligible=G.plots.filter(p=>p.plant&&!(p.plant.muts||[]).includes(mutName));
+  if(!eligible.length)return;
+  const plot=eligible[Math.floor(Math.random()*eligible.length)];
+  const applied=applyMutation(plot.plant,mutName);
+  if(!applied)return;
 
-  // For storm: animate lightning at that plot
+  // For storm: animate lightning at that plot (no sound — removed)
   if(G.weather.id==='storm'){
     const el=document.getElementById('plots-wrap').children[G.plots.indexOf(plot)];
     doLightningStrike(el);
   }
 
-  const cap=mutName.charAt(0).toUpperCase()+mutName.slice(1);
-  notify('✨ '+cap+' mutation! '+G.weather.emoji);
+  const sd=SEEDS.find(s=>s.id===plot.plant.seedId);
+  const md=MUT_DATA[mutName];
+  const mutLabel=md?md.label():'?';
+  notify('✨ '+sd.name+' → '+mutLabel+' ×'+md.mult+' '+G.weather.emoji);
   sfx('mutate');renderPlots();
 }
 
 function tryMoonlit(){
   if(!G.isNight||Math.random()>0.05)return;
-  const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
-  const plot=alive[Math.floor(Math.random()*alive.length)];
+  // Only pick plants without moonlit already
+  const eligible=G.plots.filter(p=>p.plant&&!(p.plant.muts||[]).includes('moonlit'));
+  if(!eligible.length)return;
+  const plot=eligible[Math.floor(Math.random()*eligible.length)];
   applyMutation(plot.plant,'moonlit');
-  notify('🌙 Moonlit! ×5 value!');sfx('mutate');renderPlots();
+  const sd=SEEDS.find(s=>s.id===plot.plant.seedId);
+  notify('🌙 '+sd.name+' — '+(IS_FR?'Clair de lune ! ×5 valeur !':'Moonlit! ×5 value!'));
+  sfx('mutate');renderPlots();
 }
 
 /* ═══════════════════════════════════════
@@ -824,7 +883,12 @@ function renderSeedShop(){
     const si=G.shop.find(s=>s.id===sd.id)||{qty:0,extra:0};
     const row=document.createElement('div');row.className='seed-row';
     const rc='rc-'+sd.rarity;
-    row.innerHTML=`<span class="sri">${sd.icon}</span><span style="flex:1;min-width:0"><div class="srn">${sd.name}</div><div class="srp">$${sd.price} <span class="rc ${rc}">[${sd.rarity}]</span></div><div class="srs">Stock: ${si.qty+si.extra}</div></span>`;
+    const nameColor=RARITY_COLOR[sd.rarity]||'#aaf';
+    row.innerHTML=`<span class="sri">${sd.icon}</span><span style="flex:1;min-width:0">
+      <div class="srn" style="color:${nameColor}">${sd.name} <span class="rc ${rc}">[${rarityLabel(sd.rarity)}]</span></div>
+      <div class="srp">$${sd.price.toLocaleString()}</div>
+      <div class="srs">${T.stock}${si.qty+si.extra}</div>
+    </span>`;
     row.onclick=()=>buySeed(sd.id);
     body.appendChild(row);
   });
@@ -859,23 +923,21 @@ function renderPlots(){
       const prog=Math.min(1,p.prog),done=p.done||prog>=1;
       if(done)div.classList.add('ready');
       if(p.fav)div.classList.add('fav-plot');
+      if(G.moveMode&&G.moveSrc===idx)div.style.borderColor='#fa0';
 
-      // Apply stacked mutation glows via inline style
       const glow=mutGlowStyle(p.muts);
       if(glow)div.style.boxShadow=glow;
 
-      // Icon: growing sprout (colored), done crop (also colored)
       const ico=done?sd.icon:sd.seedIcon;
       const sz='sz-'+p.size;
-
-      // Mutation icons at bottom
-      const mutIcons=(p.muts||[]).filter(m=>MUT_DATA[m]).map(m=>`<span class="p-mut-icon" title="${MUT_DATA[m].label} ×${MUT_DATA[m].mult}">${MUT_DATA[m].icon}</span>`).join('');
+      const mutIcons=(p.muts||[]).filter(m=>MUT_DATA[m]).map(m=>`<span class="p-mut-icon" title="${MUT_DATA[m].label()} ×${MUT_DATA[m].mult}">${MUT_DATA[m].icon}</span>`).join('');
+      const nameColor=RARITY_COLOR[sd.rarity]||'#aaa';
 
       div.innerHTML=`<div class="plant-wrap">
         ${p.fav?'<span class="p-heart">♥</span>':''}
         <div class="p-main">
           <span class="p-icon ${sz} ${done?'done-crop':'growing'}">${ico}</span>
-          <span class="p-name" style="color:${done?'#afa':'#666'}">${sd.name.slice(0,7)}${p.regrow?'↺':''}</span>
+          <span class="p-name" style="color:${done?nameColor:'#666'}">${sd.name.slice(0,7)}${p.regrow?'↺':''}</span>
           ${!done?`<div class="p-bar-bg"><div class="p-bar" style="width:${(prog*100).toFixed(0)}%"></div></div>`:''}
         </div>
         ${mutIcons?`<div class="p-muts">${mutIcons}</div>`:'<div class="p-muts"></div>'}
@@ -883,9 +945,22 @@ function renderPlots(){
 
       div.addEventListener('mouseenter',e=>showTT(e,p,sd));
       div.addEventListener('mouseleave',hideTT);
-      div.onclick=()=>{if(G.favMode)toggleFavPlot(idx);else if(done)harvestPlot(idx);};
+
+      div.onclick=()=>{
+        if(G.moveMode){ handleMoveClick(idx); return; }
+        if(G.favMode){ toggleFavPlot(idx); return; }
+        if(done) harvestPlot(idx);
+      };
+      // Right-click on plot = sell plant for base value
+      div.addEventListener('contextmenu',e=>{
+        e.preventDefault();
+        if(!G.moveMode&&!G.favMode) sellPlot(idx);
+      });
     } else {
-      div.onclick=()=>plantPlot(idx);
+      div.onclick=()=>{
+        if(G.moveMode){ handleMoveClick(idx); return; }
+        plantPlot(idx);
+      };
     }
     wrap.appendChild(div);
   });
@@ -942,22 +1017,25 @@ function showTT(e,plant,sd){
   const sz=SIZES.find(s=>s.id===plant.size);
   const pct=Math.round((sz.mult-1)*100);
   const{val,base}=calcVal(plant);
-  const tl=plant.done?'Ready!':Math.round((1-plant.prog)*plant.growTime)+'s left';
+  const tl=plant.done?T.ttReady:Math.round((1-plant.prog)*plant.growTime)+T.ttLeft;
 
   let mutsHtml='';
   (plant.muts||[]).forEach(mut=>{
     const md=MUT_DATA[mut];
-    if(md)mutsHtml+=`<div class="tt-m" style="color:${md.glow.replace('0.55','1')}">${md.icon} ${md.label} ×${md.mult}</div>`;
+    if(md)mutsHtml+=`<div class="tt-m" style="color:${md.glow.replace('0.55','1')}">${md.icon} ${md.label()} ×${md.mult}</div>`;
   });
 
-  const favLine=plant.fav?'<div class="tt-fav">♥ Favorited</div>':'';
-  tt.innerHTML=`<div class="tt-n">${sd.name}${plant.fav?' (favorited)':''}</div>
+  const nameColor=RARITY_COLOR[sd.rarity]||'#fff';
+  const favLine=plant.fav?`<div class="tt-fav">${T.ttFaved}</div>`:'';
+  const rarLbl=rarityLabel(sd.rarity);
+  tt.innerHTML=`<div class="tt-n" style="color:${nameColor}">${sd.name} <span style="font-size:9px;color:${nameColor};opacity:0.8">[${rarLbl}]</span>${plant.fav?' ♥':''}</div>
     ${favLine}
-    <div class="tt-s">Size: ${sz.label} (${pct>=0?'+':''}${pct}%)</div>
+    <div class="tt-s">${T.ttSize}${sz.label()} (${pct>=0?'+':''}${pct}%)</div>
     ${mutsHtml}
-    <div class="tt-v">Value: $${val.toLocaleString()}</div>
-    <div class="tt-base">Base: $${base}</div>
-    <div class="tt-t">${tl}${plant.regrow?' ↺ regrow':''}</div>`;
+    <div class="tt-v">${T.ttValue}${val.toLocaleString()}</div>
+    <div class="tt-base">${T.ttBase}${base}</div>
+    <div class="tt-t">${tl}${plant.regrow?T.ttRegrow:''}</div>
+    <div class="tt-t" style="color:#555;font-size:9px">${IS_FR?'Clic droit = vendre (base)':'Right-click = sell (base value)'}</div>`;
   tt.classList.add('show');ttOn=true;moveTT(e);
 }
 function hideTT(){document.getElementById('tt').classList.remove('show');ttOn=false;}
@@ -982,13 +1060,16 @@ function updateCursor(){
    DAY / NIGHT  (30 real-seconds each)
 ═══════════════════════════════════════ */
 function tickDN(dt){
-  // 30 real minutes per full day = 1800s. Half day = 900s.
-  // tod advances by dt/1800 per second → full cycle in 1800s
   G.tod=(G.tod+dt/1800)%1;
   const was=G.isNight;G.isNight=G.tod>=0.5;
   const h=Math.floor(G.tod*24),m=Math.floor((G.tod*24%1)*60);
   document.getElementById('time-lbl').textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
-  document.getElementById('day-lbl').textContent='Day '+G.day;
+  const dayEl=document.getElementById('day-lbl');
+  if(G.isNight){
+    dayEl.textContent=(IS_FR?'🌙 Nuit ':'🌙 Night ')+G.day;
+  } else {
+    dayEl.textContent=(IS_FR?'🌞 Jour ':'🌞 Day ')+G.day;
+  }
   if(G.isNight&&!was){document.body.classList.add('night');switchMusic('night');}
   else if(!G.isNight&&was){document.body.classList.remove('night');G.day++;switchMusic('main');}
 }
@@ -1016,37 +1097,33 @@ function tickWeather(dt){
   wxPhaseTimer+=dt;
 
   if(G.wxActive){
-    // Active phase
     const rem=Math.max(0,WX_ACTIVE_DUR-wxPhaseTimer);
-    document.getElementById('wx-timer').textContent='Active '+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+    document.getElementById('wx-timer').textContent=(IS_FR?'Actif ':'Active ')+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
     if(wxPhaseTimer>=WX_ACTIVE_DUR){
-      // Switch to clear downtime
       wxPhaseTimer=0;
       G.wxActive=false;
-      G.weather=WEATHERS[0]; // clear
-      document.getElementById('wx-name').textContent='☀ Clear (downtime)';
+      G.weather=WEATHERS[0];
+      document.getElementById('wx-name').textContent=IS_FR?'☀ Dégagé (accalmie)':'☀ Clear (downtime)';
       parts=[];
     }
-    // Lightning for storm: random strikes
+    // Lightning for storm: visual only, NO sound
     if(G.weather.id==='storm'&&G.partOn){
       lightningTimer+=dt;
       if(lightningTimer>=nextLightningTime){
         lightningTimer=0;nextLightningTime=2+Math.random()*5;
-        doLightningStrike(null); // random on-screen
+        doLightningStrike(null);
       }
     }
   } else {
-    // Clear downtime
     const rem=Math.max(0,WX_CLEAR_DUR-wxPhaseTimer);
-    document.getElementById('wx-timer').textContent='Next '+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+    document.getElementById('wx-timer').textContent=(IS_FR?'Prochain ':'Next ')+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
     if(wxPhaseTimer>=WX_CLEAR_DUR){
-      // Pick new weather
       wxPhaseTimer=0;
       const choices=WEATHERS.filter(w=>w.id!=='clear');
       const w=choices[Math.floor(Math.random()*choices.length)];
       G.weather=w;G.wxActive=true;
       setWeather(w,true);
-      notify(w.emoji+' '+w.name+' weather!');
+      notify(w.emoji+' '+w.name()+' '+(IS_FR?'météo !':'weather!'));
     }
   }
 }
@@ -1117,19 +1194,51 @@ document.getElementById('inv-open-btn').onclick=()=>{document.getElementById('in
 document.getElementById('inv-close').onclick=()=>document.getElementById('inv-modal').classList.remove('open');
 document.getElementById('inv-modal').onclick=e=>{if(e.target.id==='inv-modal')document.getElementById('inv-modal').classList.remove('open');};
 document.getElementById('sell-all-btn').onclick=sellAll;
-document.getElementById('fav-btn').onclick=function(){G.favMode=!G.favMode;this.classList.toggle('on',G.favMode);this.textContent=G.favMode?'♥ Favorite (ON)':'♡ Favorite';};
+document.getElementById('fav-btn').onclick=function(){
+  G.favMode=!G.favMode; G.moveMode=false;
+  this.classList.toggle('on',G.favMode);
+  this.textContent=G.favMode?T.favBtnOn:T.favBtn;
+  document.getElementById('move-btn').classList.remove('on');
+  document.getElementById('move-btn').textContent=IS_FR?'↕ Déplacer':'↕ Move';
+};
+document.getElementById('move-btn').onclick=function(){
+  G.moveMode=!G.moveMode; G.favMode=false; G.moveSrc=null;
+  this.classList.toggle('on',G.moveMode);
+  this.textContent=G.moveMode?(IS_FR?'↕ Déplacer (ON)':'↕ Move (ON)'):(IS_FR?'↕ Déplacer':'↕ Move');
+  document.getElementById('fav-btn').classList.remove('on');
+  document.getElementById('fav-btn').textContent=T.favBtn;
+  renderPlots();
+};
+document.getElementById('harvest-all-btn').onclick=harvestAll;
 document.getElementById('settings-btn-r').onclick=()=>document.getElementById('set-modal').classList.add('open');
 document.getElementById('set-close').onclick=()=>document.getElementById('set-modal').classList.remove('open');
-document.getElementById('tog-music').onclick=function(){G.musicOn=!G.musicOn;this.textContent=G.musicOn?'ON':'OFF';this.classList.toggle('on',G.musicOn);G.musicOn?switchMusic(G.isNight?'night':'main'):stopMusic();};
-document.getElementById('tog-sfx').onclick=function(){G.sfxOn=!G.sfxOn;this.textContent=G.sfxOn?'ON':'OFF';this.classList.toggle('on',G.sfxOn);};
-document.getElementById('tog-par').onclick=function(){G.partOn=!G.partOn;this.textContent=G.partOn?'ON':'OFF';this.classList.toggle('on',G.partOn);if(!G.partOn)parts=[];};
+document.getElementById('tog-music').onclick=function(){G.musicOn=!G.musicOn;this.textContent=G.musicOn?T.on:T.off;this.classList.toggle('on',G.musicOn);G.musicOn?switchMusic(G.isNight?'night':'main'):stopMusic();};
+document.getElementById('tog-sfx').onclick=function(){G.sfxOn=!G.sfxOn;this.textContent=G.sfxOn?T.on:T.off;this.classList.toggle('on',G.sfxOn);};
+document.getElementById('tog-par').onclick=function(){G.partOn=!G.partOn;this.textContent=G.partOn?T.on:T.off;this.classList.toggle('on',G.partOn);if(!G.partOn)parts=[];};
 document.querySelectorAll('.ifbtn').forEach(b=>{b.onclick=()=>{document.querySelectorAll('.ifbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');invFilter=b.dataset.f;renderInvModal();};});
 document.addEventListener('keydown',e=>{
   const n=parseInt(e.key);
   if(n>=1&&n<=9){G.selSlot=G.selSlot===(n-1)?null:n-1;updateCursor();renderBar();}
   else if(e.key==='0'){G.selSlot=G.selSlot===9?null:9;updateCursor();renderBar();}
-  else if(e.key==='Escape'){G.selSlot=null;updateCursor();renderBar();document.getElementById('inv-modal').classList.remove('open');document.getElementById('set-modal').classList.remove('open');hideTT();}
-  else if(e.key==='f'||e.key==='F'){G.favMode=!G.favMode;const b=document.getElementById('fav-btn');b.classList.toggle('on',G.favMode);b.textContent=G.favMode?'♥ Favorite (ON)':'♡ Favorite';}
+  else if(e.key==='Escape'){
+    G.selSlot=null;G.moveSrc=null;updateCursor();renderBar();renderPlots();
+    document.getElementById('inv-modal').classList.remove('open');
+    document.getElementById('set-modal').classList.remove('open');
+    hideTT();
+  }
+  else if(e.key==='f'||e.key==='F'){
+    G.favMode=!G.favMode;G.moveMode=false;G.moveSrc=null;
+    const b=document.getElementById('fav-btn');
+    b.classList.toggle('on',G.favMode);
+    b.textContent=G.favMode?T.favBtnOn:T.favBtn;
+  }
+  else if(e.key==='m'||e.key==='M'){
+    G.moveMode=!G.moveMode;G.favMode=false;G.moveSrc=null;
+    const b=document.getElementById('move-btn');
+    b.classList.toggle('on',G.moveMode);
+    b.textContent=G.moveMode?(IS_FR?'↕ Déplacer (ON)':'↕ Move (ON)'):(IS_FR?'↕ Déplacer':'↕ Move');
+    renderPlots();
+  }
 });
 function resizeCv(){const cv=document.getElementById('weather-canvas');cv.width=window.innerWidth;cv.height=window.innerHeight;}
 window.addEventListener('resize',resizeCv);resizeCv();
@@ -1147,16 +1256,44 @@ function init(){
       delete p.plant.mut;
     }
   });
-  // Migrate inv
   G.inv.forEach(i=>{
     if(i.mut!==undefined&&!i.muts){i.muts=i.mut?[i.mut]:[];delete i.mut;}
   });
+
+  // Apply translations to static HTML elements
+  document.title=T.title;
+  document.getElementById('inv-open-btn').textContent=T.invBtn;
+  document.getElementById('sell-hdr').textContent=T.sellShopHdr;
+  document.getElementById('sell-all-btn').textContent=T.sellAllBtn;
+  document.getElementById('seed-shop-title').textContent=T.seedShopHdr;
+  document.getElementById('settings-btn-r').textContent=T.settingsBtn;
+  document.getElementById('fav-btn').textContent=T.favBtn;
+  document.getElementById('move-btn').textContent=IS_FR?'↕ Déplacer':'↕ Move';
+  document.getElementById('harvest-all-btn').textContent=IS_FR?'🌾 Tout récolter':'🌾 Harvest All';
+  document.getElementById('top-info').textContent=T.topInfo;
+  document.getElementById('inv-htitle').textContent=T.invTitle;
+  // Filter buttons
+  const fbts=document.querySelectorAll('.ifbtn');
+  const fkeys=[T.fAll,T.fSeeds,T.fCrops,T.fFavs];
+  fbts.forEach((b,i)=>{if(fkeys[i])b.textContent=fkeys[i];});
+  // Settings modal
+  document.querySelector('.set-title').textContent=T.settingsTitle;
+  const setRows=document.querySelectorAll('.set-row span');
+  if(setRows[0])setRows[0].textContent=T.music;
+  if(setRows[1])setRows[1].textContent=T.sfx;
+  if(setRows[2])setRows[2].textContent=T.particles;
+  document.getElementById('set-close').textContent=T.close;
+  // wx-timer label prefix
+  document.getElementById('wx-timer-label').textContent=IS_FR?'Prochain : ':'Next: ';
+
   document.body.classList.toggle('night',G.isNight);
   renderAll();
   document.addEventListener('click',function startMu(){buildAudio();switchMusic(G.isNight?'night':'main');document.removeEventListener('click',startMu);},{once:true});
   lastT=performance.now();requestAnimationFrame(loop);
-  notify('🌱 Grow a Garden — buy seeds → plant → harvest!');
-  notify('💡 Keys 1–0 select bar · F=favorite mode · crops regrow (except Carrot)');
+  notify(T.notifWelcome);
+  notify(T.notifTips);
+  if(IS_FR)notify('💡 Clic droit sur une parcelle = vendre la plante (valeur base) · M=déplacer');
+  else      notify('💡 Right-click plot = sell plant (base value) · M=move mode');
 }
 init();
 </script>
