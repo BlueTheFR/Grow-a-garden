@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Grow a Garden</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111; color: #eee;
+  font-family: 'Courier New', monospace;
+  overflow: hidden; width: 100vw; height: 100vh;
+  cursor: none; user-select: none;
+}
+#cursor {
+  position: fixed; width: 18px; height: 18px;
+  border: 2px solid #fff; border-radius: 50%;
+  pointer-events: none; transform: translate(-50%,-50%); z-index: 9999;
+}
+#cursor.has-seed { background: rgba(80,200,80,0.35); border-color: #8f8; }
+#cursor-label {
+  position: fixed; font-size: 16px;
+  pointer-events: none; transform: translate(6px,-20px); z-index: 9999; line-height: 1;
+}
+#night-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,25,0);
+  pointer-events: none; transition: background 4s ease; z-index: 5;
+}
+body.night #night-overlay { background: rgba(0,0,25,0.5); }
+#weather-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
+
+/* Layout */
+#left-panel {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 180px;
+  background: #151515; border-right: 1px solid #2a2a2a;
+  display: flex; flex-direction: column; z-index: 10;
+}
+#right-panel {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 180px;
+  background: #151515; border-left: 1px solid #2a2a2a;
+  display: flex; flex-direction: column; z-index: 10;
+}
+#top-bar {
+  position: absolute; left: 180px; right: 180px; top: 0; height: 44px;
+  background: #151515; border-bottom: 1px solid #2a2a2a;
+  display: flex; align-items: center; gap: 8px; padding: 0 12px; z-index: 10;
+}
+#bottom-bar {
+  position: absolute; left: 180px; right: 180px; bottom: 0; height: 88px;
+  background: #151515; border-top: 1px solid #2a2a2a;
+  display: flex; align-items: center; padding: 6px 10px; gap: 4px; z-index: 10;
+  overflow-x: auto;
+}
+#map-area {
+  position: absolute; left: 180px; right: 180px; top: 44px; bottom: 88px;
+  background: #1a1a1a; overflow: hidden;
+  filter: grayscale(1);
+}
+#plots-wrap {
+  position: absolute; inset: 8px;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 3px;
+}
+.plot {
+  aspect-ratio: 1 / 1;
+  background: #2b1a0a; border: 1px solid #3a2510; border-radius: 2px;
+  cursor: none; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; transition: border-color 0.15s;
+}
+.plot:hover { border-color: #666; }
+.plot.ready { border-color: #4a4; }
+.plot.fav-plot { border-color: #f33 !important; }
+.plant-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; height: 100%; gap: 1px; padding: 2px; position: relative;
+}
+.p-icon { line-height: 1; }
+.p-icon.sz-tiny   { font-size: 9px; }
+.p-icon.sz-small  { font-size: 12px; }
+.p-icon.sz-normal { font-size: 16px; }
+.p-icon.sz-big    { font-size: 20px; }
+.p-icon.sz-huge   { font-size: 24px; }
+/* Growing plants: colored (seeds/sprouts). Done crops: grayscale */
+.p-icon.growing   { filter: none; }
+.p-icon.done-crop { filter: grayscale(1) brightness(1.4); }
+.p-name { font-size: 5.5px; color: #777; text-align: center; overflow: hidden; max-width: 100%; white-space: nowrap; text-overflow: ellipsis; }
+.p-bar-bg { width: 75%; height: 2px; background: #333; border-radius: 1px; }
+.p-bar    { height: 100%; background: #4a4; border-radius: 1px; }
+.p-heart  { position: absolute; top: 1px; right: 2px; font-size: 9px; color: #f33; line-height: 1; }
+/* Mutation glows */
+.mut-moonlit  { box-shadow: inset 0 0 7px #44f; }
+.mut-stormy   { box-shadow: inset 0 0 7px #a4f; }
+.mut-rainbow  { box-shadow: inset 0 0 7px #f4a; }
+.mut-frosty   { box-shadow: inset 0 0 7px #4ff; }
+.mut-scorched { box-shadow: inset 0 0 7px #f84; }
+.mut-hydrated { box-shadow: inset 0 0 7px #4af; }
+.mut-misty    { box-shadow: inset 0 0 7px #aaa; }
+
+/* LEFT PANEL */
+#money-row { padding: 6px 8px 3px; font-size: 13px; color: #fd4; font-weight: bold; }
+#inv-open-btn {
+  margin: 2px 6px 3px; background: #1e1e1e; border: 1px solid #333;
+  color: #bbb; padding: 4px 6px; border-radius: 3px; cursor: pointer;
+  font-family: inherit; font-size: 10px; text-align: left;
+}
+#inv-open-btn:hover { background: #252525; }
+#sell-shop {
+  flex: 1; margin: 3px 6px 6px; border: 2px solid #700;
+  background: #180a0a; border-radius: 4px;
+  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+.shop-hdr { padding: 4px 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
+#sell-hdr { background: #700; color: #fbb; }
+#sell-body { flex: 1; overflow-y: auto; padding: 3px; }
+.sell-row { display: flex; align-items: center; gap: 3px; padding: 2px 3px; border-bottom: 1px solid #240000; cursor: pointer; font-size: 10px; }
+.sell-row:hover { background: #200000; }
+.sell-row .sri { font-size: 13px; }
+.sell-row .srn { color: #faa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sell-row .srv { color: #f84; font-size: 9px; }
+#sell-all-btn { background: #900; color: #fcc; border: none; border-top: 1px solid #700; padding: 5px; cursor: pointer; font-family: inherit; font-size: 10px; font-weight: bold; }
+#sell-all-btn:hover { background: #b00; }
+
+/* RIGHT PANEL */
+#weather-row { padding: 4px 8px 2px; font-size: 11px; color: #aaa; }
+#daytime-row { padding: 1px 8px 3px; font-size: 11px; color: #fd4; }
+#seed-shop {
+  flex: 1; margin: 3px 6px 3px; border: 2px solid #007;
+  background: #06060f; border-radius: 4px;
+  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+#seed-hdr { background: #007; color: #bbf; }
+#restock-time { font-size: 9px; color: #88f; }
+#seed-body { flex: 1; overflow-y: auto; padding: 3px; }
+.seed-row { display: flex; align-items: center; gap: 3px; padding: 2px 3px; border-bottom: 1px solid #040414; cursor: pointer; font-size: 10px; }
+.seed-row:hover { background: #050520; }
+.seed-row .sri { font-size: 13px; }
+.seed-row .srn { color: #aaf; }
+.seed-row .srp { color: #fd4; font-size: 9px; }
+.seed-row .srs { color: #555; font-size: 9px; }
+.rc { font-size: 8px; }
+.rc-common    { color: #888; } .rc-uncommon { color: #4e4; }
+.rc-rare      { color: #55f; } .rc-epic     { color: #a4f; } .rc-legendary { color: #fa3; }
+#settings-btn-r { margin: 3px 6px 6px; background: #1e1e1e; border: 1px solid #333; color: #bbb; padding: 4px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; text-align: left; }
+#settings-btn-r:hover { background: #252525; }
+
+/* TOP BAR */
+#fav-btn { background: #1e1e1e; border: 1px solid #333; color: #bbb; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 11px; }
+#fav-btn:hover { background: #252525; }
+#fav-btn.on { border-color: #f44; color: #f88; }
+#top-info { font-size: 10px; color: #555; }
+
+/* BOTTOM BAR */
+.b-slot { width: 68px; height: 68px; flex-shrink: 0; background: #1c1c1c; border: 1px solid #2e2e2e; border-radius: 3px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.b-slot:hover { border-color: #555; }
+.b-slot.sel { border: 2px solid #4e4; }
+.b-slot.empty { opacity: 0.3; }
+.b-si { font-size: 22px; }
+.b-sn { font-size: 8px; color: #777; text-align: center; max-width: 62px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.b-sq { font-size: 9px; color: #fd4; }
+.b-snum { font-size: 9px; color: #3a3a3a; }
+
+/* TOOLTIP */
+#tt { position: fixed; background: rgba(12,12,12,0.97); border: 1px solid #555; border-radius: 4px; padding: 6px 10px; font-size: 11px; pointer-events: none; z-index: 10000; max-width: 200px; display: none; }
+#tt.show { display: block; }
+.tt-n { font-weight: bold; color: #fff; margin-bottom: 2px; }
+.tt-s { color: #aaa; font-size: 10px; }
+.tt-m { color: #b8f; font-size: 10px; }
+.tt-v { color: #fd4; font-size: 10px; }
+.tt-t { color: #666; font-size: 10px; }
+
+/* NOTIFICATIONS */
+#notifs { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; }
+.notif { background: rgba(20,20,20,0.95); border: 1px solid #555; border-radius: 4px; padding: 4px 14px; font-size: 11px; animation: nf 3s forwards; white-space: nowrap; }
+@keyframes nf { 0%{opacity:0;transform:translateY(-8px)} 12%{opacity:1;transform:translateY(0)} 75%{opacity:1} 100%{opacity:0} }
+
+/* INVENTORY MODAL */
+#inv-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; display: none; align-items: center; justify-content: center; }
+#inv-modal.open { display: flex; }
+#inv-box { background: #1c1c1c; border: 1px solid #444; border-radius: 8px; width: 620px; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden; }
+#inv-hdr { background: #232323; padding: 8px 14px; display: flex; align-items: center; border-bottom: 1px solid #2e2e2e; gap: 8px; }
+#inv-htitle { flex: 1; font-size: 13px; font-weight: bold; }
+#inv-close { background: none; border: none; color: #777; cursor: pointer; font-size: 17px; }
+#inv-filters { display: flex; gap: 4px; padding: 5px 10px; background: #1e1e1e; border-bottom: 1px solid #2e2e2e; }
+.ifbtn { background: #272727; border: 1px solid #333; color: #888; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: inherit; }
+.ifbtn:hover { background: #303030; }
+.ifbtn.active { background: #353535; color: #eee; border-color: #555; }
+#inv-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 4px; padding: 8px; overflow-y: auto; flex: 1; }
+.ig { background: #222; border: 1px solid #2e2e2e; border-radius: 4px; padding: 5px 3px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; min-height: 70px; transition: border-color 0.1s; }
+.ig:hover { border-color: #555; }
+.ig.faved { border-color: #f33; }
+.ig .ig-i { font-size: 20px; }
+.ig .ig-n { font-size: 9px; color: #888; text-align: center; }
+.ig .ig-q { font-size: 9px; color: #fd4; }
+.ig .ig-v { font-size: 8px; color: #666; }
+.ig .ig-f { position: absolute; top: 2px; right: 3px; color: #f33; font-size: 9px; }
+
+/* SETTINGS MODAL */
+#set-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; display: none; align-items: center; justify-content: center; }
+#set-modal.open { display: flex; }
+#set-box { background: #1c1c1c; border: 1px solid #444; border-radius: 8px; padding: 18px; width: 280px; display: flex; flex-direction: column; gap: 11px; }
+.set-title { font-size: 13px; font-weight: bold; }
+.set-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+.tog { background: #272727; border: 1px solid #3a3a3a; color: #bbb; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; min-width: 46px; }
+.tog.on { background: #062006; border-color: #2a5a2a; color: #7d7; }
+.tog:hover { opacity: 0.85; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-label"></div>
+<canvas id="weather-canvas"></canvas>
+<div id="night-overlay"></div>
+<div id="tt"></div>
+<div id="notifs"></div>
+
+<div id="left-panel">
+  <div id="money-row">💰 $<span id="money-val">50</span></div>
+  <button id="inv-open-btn">📦 Inventory (100 slots)</button>
+  <div id="sell-shop">
+    <div class="shop-hdr" id="sell-hdr">🔴 SELL SHOP</div>
+    <div id="sell-body"></div>
+    <button id="sell-all-btn">SELL ALL (non-favorited)</button>
+  </div>
+</div>
+
+<div id="right-panel">
+  <div id="weather-row">☁ <span id="wx-name">Clear</span></div>
+  <div id="daytime-row">🌞 <span id="day-lbl">Day 1</span> &nbsp;<span id="time-lbl">06:00</span></div>
+  <div id="seed-shop">
+    <div class="shop-hdr" id="seed-hdr">
+      <span>🔵 SEED SHOP</span>
+      <span id="restock-time">5:00</span>
+    </div>
+    <div id="seed-body"></div>
+  </div>
+  <button id="settings-btn-r">⚙ Settings</button>
+</div>
+
+<div id="top-bar">
+  <button id="fav-btn">♡ Favorite</button>
+  <span id="top-info">Each plot: 1 crop · 50 plots total · click plot to plant/harvest</span>
+</div>
+
+<div id="map-area">
+  <div id="plots-wrap"></div>
+</div>
+
+<div id="bottom-bar"></div>
+
+<div id="inv-modal">
+  <div id="inv-box">
+    <div id="inv-hdr">
+      <span id="inv-htitle">Inventory</span>
+      <button id="inv-close">✕</button>
+    </div>
+    <div id="inv-filters">
+      <button class="ifbtn active" data-f="all">All</button>
+      <button class="ifbtn" data-f="seeds">Seeds</button>
+      <button class="ifbtn" data-f="crops">Crops</button>
+      <button class="ifbtn" data-f="favorites">♥ Favorites</button>
+    </div>
+    <div id="inv-grid"></div>
+  </div>
+</div>
+
+<div id="set-modal">
+  <div id="set-box">
+    <div class="set-title">⚙ Settings</div>
+    <div class="set-row"><span>Music</span><button class="tog on" id="tog-music">ON</button></div>
+    <div class="set-row"><span>Sound FX</span><button class="tog on" id="tog-sfx">ON</button></div>
+    <div class="set-row"><span>Weather Particles</span><button class="tog on" id="tog-par">ON</button></div>
+    <button class="tog" id="set-close" style="align-self:flex-end;margin-top:6px;">Close</button>
+  </div>
+</div>
+
+<script>
+const SAVE_KEY='gar_v3';
+const SEEDS=[
+  {id:'carrot',    name:'Carrot',      icon:'🥕',seedIcon:'🌱',rarity:'common',   price:10, grow:30, base:15  },
+  {id:'potato',    name:'Potato',      icon:'🥔',seedIcon:'🌱',rarity:'common',   price:12, grow:35, base:18  },
+  {id:'tomato',    name:'Tomato',      icon:'🍅',seedIcon:'🌿',rarity:'common',   price:15, grow:40, base:22  },
+  {id:'corn',      name:'Corn',        icon:'🌽',seedIcon:'🌿',rarity:'uncommon', price:30, grow:60, base:50  },
+  {id:'strawberry',name:'Strawberry',  icon:'🍓',seedIcon:'🌿',rarity:'uncommon', price:40, grow:70, base:65  },
+  {id:'blueberry', name:'Blueberry',   icon:'🫐',seedIcon:'🌳',rarity:'rare',     price:80, grow:100,base:130 },
+  {id:'watermelon',name:'Watermelon',  icon:'🍉',seedIcon:'🌳',rarity:'rare',     price:100,grow:120,base:170 },
+  {id:'pineapple', name:'Pineapple',   icon:'🍍',seedIcon:'🌴',rarity:'epic',     price:250,grow:180,base:450 },
+  {id:'mango',     name:'Mango',       icon:'🥭',seedIcon:'🌴',rarity:'epic',     price:300,grow:200,base:540 },
+  {id:'dragonfruit',name:'DragonFruit',icon:'🍈',seedIcon:'🌴',rarity:'legendary',price:800,grow:360,base:1600},
+  {id:'cacao',     name:'Cacao',       icon:'🍫',seedIcon:'🌴',rarity:'legendary',price:1000,grow:420,base:2200},
+];
+const SIZES=[
+  {id:'tiny',  label:'Tiny',  mult:0.5 },
+  {id:'small', label:'Small', mult:0.75},
+  {id:'normal',label:'Normal',mult:1   },
+  {id:'big',   label:'Big',   mult:1.5 },
+  {id:'huge',  label:'Huge',  mult:2   },
+];
+const WEATHERS=[
+  {id:'clear',   name:'Clear',   emoji:'☀', mut:null,       wm:1.0, col:null  },
+  {id:'rain',    name:'Rain',    emoji:'🌧',mut:'hydrated',  wm:1.2, col:'#4af'},
+  {id:'storm',   name:'Storm',   emoji:'⛈',mut:'stormy',    wm:1.4, col:'#a4f'},
+  {id:'fog',     name:'Fog',     emoji:'🌫',mut:'misty',     wm:1.1, col:'#aaa'},
+  {id:'frost',   name:'Frost',   emoji:'❄', mut:'frosty',   wm:1.35,col:'#4ff'},
+  {id:'heatwave',name:'Heatwave',emoji:'🔥',mut:'scorched',  wm:1.3, col:'#f84'},
+  {id:'rainbow', name:'Rainbow', emoji:'🌈',mut:'rainbow',   wm:1.6, col:'#f4a'},
+];
+
+let G={
+  money:50, day:1, tod:0, isNight:false,
+  weather:WEATHERS[0], weatherTimer:0, weatherNext:300,
+  shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
+  inv:[], bar:Array(10).fill(null), selSlot:null,
+  favMode:false, musicOn:true, sfxOn:true, partOn:true,
+};
+
+// ── SAVE / LOAD ──
+function save(){try{G._ts=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY); if(!r)return;
+    const s=JSON.parse(r);
+    const el=s._ts?Math.floor((Date.now()-s._ts)/1000):0;
+    if(s.plots&&el>0) s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
+    Object.assign(G,s); G._ts=undefined;
+    if(el>0)notify('🌙 Back! Offline growth applied ('+el+'s)');
+  }catch(e){}
+}
+
+// ── SHOP ──
+function initShop(){G.shop=SEEDS.map(s=>({id:s.id,qty:1,extra:0}));}
+function restock(){
+  G.shop.forEach(item=>{
+    item.qty=1;
+    const sd=SEEDS.find(s=>s.id===item.id);
+    const c={common:0.6,uncommon:0.35,rare:0.2,epic:0.1,legendary:0.04}[sd.rarity]||0.1;
+    item.extra=Math.random()<c?1+Math.floor(Math.random()*4):0;
+  });
+  notify('🛒 Shop Restocked!'); sfx('restock'); renderSeedShop();
+}
+
+// ── INV ──
+function addInv(item){
+  if(item.type==='seed'){const i=G.inv.findIndex(x=>x.type==='seed'&&x.seedId===item.seedId);if(i>=0){G.inv[i].qty++;return;}}
+  if(item.type==='crop'){const i=G.inv.findIndex(x=>x.type==='crop'&&x.seedId===item.seedId&&x.mut===item.mut&&x.size===item.size);if(i>=0){G.inv[i].qty++;return;}}
+  G.inv.push({...item,qty:1});
+}
+function seedInvIdx(sid){return G.inv.findIndex(x=>x.type==='seed'&&x.seedId===sid);}
+
+// ── PLANT / HARVEST ──
+function plantPlot(idx){
+  if(G.selSlot===null)return;
+  const ref=G.bar[G.selSlot]; if(ref===null)return;
+  const item=G.inv[ref]; if(!item||item.type!=='seed')return;
+  if(G.plots[idx].plant)return;
+  const sd=SEEDS.find(s=>s.id===item.seedId);
+  G.plots[idx].plant={seedId:item.seedId,prog:0,growTime:sd.grow,done:false,mut:null,size:SIZES[Math.floor(Math.random()*SIZES.length)].id,fav:false};
+  item.qty--;
+  if(item.qty<=0){G.inv.splice(ref,1);G.bar=G.bar.map(b=>b===ref?null:(b>ref?b-1:b));if(G.selSlot!==null&&G.bar[G.selSlot]===null)G.selSlot=null;}
+  sfx('plant'); renderAll(); save();
+}
+function harvestPlot(idx){
+  const plot=G.plots[idx]; if(!plot.plant||!plot.plant.done)return;
+  const p=plot.plant; if(p.fav){notify('♥ Unfavorite to harvest');return;}
+  const sd=SEEDS.find(s=>s.id===p.seedId);
+  const sz=SIZES.find(s=>s.id===p.size);
+  let m=sz.mult*(G.weather.wm||1);
+  if(p.mut==='moonlit') m*=5;
+  if(p.mut==='rainbow') m*=1.6;
+  if(p.mut==='scorched')m*=1.3;
+  if(p.mut==='frosty')  m*=1.35;
+  if(p.mut==='stormy')  m*=1.4;
+  if(p.mut==='hydrated')m*=1.2;
+  const val=Math.round(sd.base*m);
+  addInv({type:'crop',seedId:p.seedId,icon:sd.icon,name:sd.name,val,mut:p.mut,size:p.size,fav:false});
+  plot.plant=null; sfx('harvest'); renderAll(); save();
+}
+function toggleFavPlot(idx){
+  const p=G.plots[idx].plant; if(!p)return;
+  p.fav=!p.fav; renderPlots(); save();
+}
+
+// ── SELL ──
+function sellAll(){
+  let earned=0;
+  G.inv=G.inv.filter(i=>{if(i.type==='crop'&&!i.fav){earned+=i.val*i.qty;return false;}return true;});
+  G.bar=G.bar.map(b=>(b!==null&&G.inv[b])?b:null);
+  G.money+=earned; if(earned>0)notify('💰 Sold for $'+earned.toLocaleString()+'!');
+  renderAll(); save();
+}
+function sellOne(idx){
+  const item=G.inv[idx]; if(!item||item.type!=='crop'||item.fav){notify('♥ Unfavorite first');return;}
+  G.money+=item.val*item.qty; notify('💰 Sold '+item.name+' $'+(item.val*item.qty).toLocaleString());
+  G.inv.splice(idx,1); G.bar=G.bar.map(b=>b===idx?null:(b>idx?b-1:b));
+  renderAll(); save();
+}
+
+// ── BUY ──
+function buySeed(sid){
+  const sd=SEEDS.find(s=>s.id===sid); if(!sd)return;
+  if(G.money<sd.price){notify('❌ Not enough money');return;}
+  const si=G.shop.find(s=>s.id===sid);
+  if((si.qty+si.extra)<=0){notify('❌ Out of stock');return;}
+  G.money-=sd.price;
+  if(si.qty>0)si.qty--;else si.extra--;
+  addInv({type:'seed',seedId:sd.id,icon:sd.icon,name:sd.name+' Seed'});
+  const empty=G.bar.findIndex(b=>b===null);
+  if(empty>=0){const ii=seedInvIdx(sd.id);if(ii>=0&&!G.bar.includes(ii))G.bar[empty]=ii;}
+  sfx('buy'); notify('🌱 Bought '+sd.name+' Seed'); renderAll(); save();
+}
+
+// ── SOUND ──
+let actx=null;
+function getACtx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
+function sfx(type){
+  if(!G.sfxOn)return;
+  try{
+    const ctx=getACtx(),o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    const T={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth']};
+    const[f,v,tp]=T[type]||[440,0.07,'sine'];
+    o.type=tp;o.frequency.value=f;
+    g.gain.setValueAtTime(v,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+    o.start();o.stop(ctx.currentTime+0.3);
+  }catch(e){}
+}
+
+// ── MUSIC ──
+// Tracks map to the files shown in the screenshot:
+//   Main: "Grow a Garden Soundtrack - Main Theme.mp3", "Grow a Garden Soundtrack - Main Theme 4.mp3"
+//   Night: "Grow a Garden Soundtrack - Night Theme 1.mp3", "Grow a Garden Soundtrack - Night Theme 2.mp3"
+const TRACKS={
+  main:['Grow a Garden Soundtrack - Main Theme.mp3','Grow a Garden Soundtrack - Main Theme 4.mp3'],
+  night:['Grow a Garden Soundtrack - Night Theme 1.mp3','Grow a Garden Soundtrack - Night Theme 2.mp3'],
+};
+let audioEl=null,curTrackType=null,tidxDay=0,tidxNight=0,muSwitch=null;
+function buildAudio(){
+  if(audioEl)return;
+  audioEl=new Audio(); audioEl.loop=false; audioEl.volume=0.35;
+  audioEl.addEventListener('ended',()=>advanceTrack(curTrackType));
+}
+function playTrack(type){
+  if(!G.musicOn)return;
+  buildAudio();
+  const list=TRACKS[type]||TRACKS.main;
+  const idx=(type==='night'?tidxNight:tidxDay)%list.length;
+  audioEl.src=list[idx]; audioEl.currentTime=0;
+  audioEl.play().catch(()=>{});
+  curTrackType=type;
+}
+function advanceTrack(type){
+  if(type==='night')tidxNight=(tidxNight+1)%TRACKS.night.length;
+  else              tidxDay  =(tidxDay+1)  %TRACKS.main.length;
+  playTrack(type);
+}
+function switchMusic(type){
+  if(!G.musicOn){stopMusic();return;}
+  if(curTrackType===type)return;
+  if(muSwitch)clearTimeout(muSwitch);
+  stopMusic();
+  muSwitch=setTimeout(()=>playTrack(type),2000);
+}
+function stopMusic(){if(!audioEl)return;audioEl.pause();audioEl.src='';curTrackType=null;}
+
+// ── PARTICLES ──
+let parts=[];
+function setWeather(w){
+  G.weather=w;
+  document.getElementById('wx-name').textContent=w.emoji+' '+w.name;
+  parts=[];
+  if(G.partOn&&w.col)spawnParts(w);
+}
+function spawnParts(w){
+  const cv=document.getElementById('weather-canvas');
+  for(let i=0;i<70;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:w.id==='storm'?(-1.5-Math.random()*2):0,vy:w.id==='fog'?0.08:(1+Math.random()*1.5),r:w.id==='fog'?18+Math.random()*25:1.5+Math.random()*2,a:w.id==='fog'?0.05:0.25+Math.random()*0.35,c:w.col,type:w.id});
+}
+function tickParts(){
+  if(!G.partOn){parts=[];return;}
+  const cv=document.getElementById('weather-canvas');
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.y>cv.height){p.y=-8;p.x=Math.random()*cv.width;}if(p.x<-10)p.x=cv.width;});
+}
+function drawParts(){
+  const cv=document.getElementById('weather-canvas'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(!G.partOn||!parts.length)return;
+  parts.forEach(p=>{ctx.globalAlpha=p.a;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+}
+
+// ── MUTATION ──
+function tryMutate(){
+  if(Math.random()>0.1)return;
+  const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
+  const plot=alive[Math.floor(Math.random()*alive.length)];
+  if(!G.weather.mut)return;
+  plot.plant.mut=G.weather.mut;
+  notify('✨ '+(G.weather.mut.charAt(0).toUpperCase()+G.weather.mut.slice(1))+' mutation! ('+G.weather.emoji+')');
+  sfx('mutate');renderPlots();
+}
+function tryMoonlit(){
+  if(!G.isNight||Math.random()>0.05)return;
+  const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
+  const plot=alive[Math.floor(Math.random()*alive.length)];
+  plot.plant.mut='moonlit';notify('🌙 Moonlit! ×5 sell value!');sfx('mutate');renderPlots();
+}
+
+// ── RENDER ──
+function renderAll(){renderMoney();renderSeedShop();renderSellShop();renderBar();renderPlots();renderInvModal();}
+function renderMoney(){document.getElementById('money-val').textContent=G.money.toLocaleString();}
+
+function renderSeedShop(){
+  const body=document.getElementById('seed-body');body.innerHTML='';
+  SEEDS.forEach(sd=>{
+    const si=G.shop.find(s=>s.id===sd.id)||{qty:0,extra:0};
+    const row=document.createElement('div');row.className='seed-row';
+    const rc='rc-'+sd.rarity;
+    row.innerHTML=`<span class="sri">${sd.icon}</span><span style="flex:1;min-width:0"><div class="srn">${sd.name}</div><div class="srp">$${sd.price} <span class="rc ${rc}">[${sd.rarity}]</span></div><div class="srs">Stock: ${si.qty+si.extra}</div></span>`;
+    row.onclick=()=>buySeed(sd.id);
+    body.appendChild(row);
+  });
+}
+
+function renderSellShop(){
+  const body=document.getElementById('sell-body');body.innerHTML='';
+  G.inv.filter(i=>i.type==='crop').sort((a,b)=>(a.val||0)-(b.val||0)).forEach(item=>{
+    const idx=G.inv.indexOf(item);
+    const row=document.createElement('div');row.className='sell-row';
+    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name} ×${item.qty}</div><div class="srv">$${item.val}${item.mut?' ['+item.mut+']':''}</div></span>`;
+    if(!item.fav)row.onclick=()=>sellOne(idx);
+    body.appendChild(row);
+  });
+}
+
+function renderPlots(){
+  const wrap=document.getElementById('plots-wrap');wrap.innerHTML='';
+  G.plots.forEach((plot,idx)=>{
+    const div=document.createElement('div');div.className='plot';
+    if(plot.plant){
+      const p=plot.plant,sd=SEEDS.find(s=>s.id===p.seedId);
+      const prog=Math.min(1,p.prog),done=p.done||prog>=1;
+      if(done)div.classList.add('ready');
+      if(p.fav)div.classList.add('fav-plot');
+      if(p.mut)div.classList.add('mut-'+p.mut);
+      // Icon: colored growing sprout vs grayscale done crop
+      const ico=done?sd.icon:sd.seedIcon;
+      const col=done?'done-crop':'growing';
+      const sz='sz-'+p.size;
+      div.innerHTML=`<div class="plant-wrap">${p.fav?'<span class="p-heart">♥</span>':''}<span class="p-icon ${sz} ${col}">${ico}</span><span class="p-name" style="color:${done?'#afa':'#666'}">${sd.name.slice(0,7)}</span>${!done?`<div class="p-bar-bg"><div class="p-bar" style="width:${(prog*100).toFixed(0)}%"></div></div>`:''}</div>`;
+      div.addEventListener('mouseenter',e=>showTT(e,p,sd));
+      div.addEventListener('mouseleave',hideTT);
+      div.onclick=()=>{if(G.favMode)toggleFavPlot(idx);else if(done)harvestPlot(idx);};
+    } else {
+      div.onclick=()=>plantPlot(idx);
+    }
+    wrap.appendChild(div);
+  });
+}
+
+function renderBar(){
+  const bar=document.getElementById('bottom-bar');bar.innerHTML='';
+  G.bar.forEach((ref,si)=>{
+    const item=ref!==null?G.inv[ref]:null;
+    const div=document.createElement('div');
+    div.className='b-slot'+(item?'':' empty')+(G.selSlot===si?' sel':'');
+    if(item)div.innerHTML=`<span class="b-si">${item.icon}</span><span class="b-sn">${item.name}</span><span class="b-sq">×${item.qty}</span>`;
+    else div.innerHTML=`<span class="b-snum">${si+1}</span>`;
+    div.onclick=()=>{if(!item)return;G.selSlot=G.selSlot===si?null:si;updateCursor();renderBar();};
+    bar.appendChild(div);
+  });
+}
+
+let invFilter='all';
+function renderInvModal(){
+  const grid=document.getElementById('inv-grid');grid.innerHTML='';
+  let items=[...G.inv].sort((a,b)=>(a.val||0)-(b.val||0));
+  if(invFilter==='seeds')items=items.filter(i=>i.type==='seed');
+  else if(invFilter==='crops')items=items.filter(i=>i.type==='crop');
+  else if(invFilter==='favorites')items=items.filter(i=>i.fav);
+  items.forEach(item=>{
+    const idx=G.inv.indexOf(item);
+    const div=document.createElement('div');div.className='ig'+(item.fav?' faved':'');
+    div.innerHTML=`${item.fav?'<span class="ig-f">♥</span>':''}<span class="ig-i">${item.icon}</span><span class="ig-n">${item.name}</span><span class="ig-q">×${item.qty}</span>${item.val?`<span class="ig-v">$${item.val}</span>`:''}`;
+    div.onclick=()=>{if(item.type==='crop'){item.fav=!item.fav;renderInvModal();renderSellShop();save();}};
+    div.addEventListener('contextmenu',e=>{e.preventDefault();if(item.type==='seed'){const e2=G.bar.findIndex(b=>b===null);if(e2>=0&&!G.bar.includes(idx)){G.bar[e2]=idx;renderBar();}}});
+    grid.appendChild(div);
+  });
+}
+
+// ── TOOLTIP (only visible while mouse is over plot) ──
+let ttOn=false;
+function showTT(e,plant,sd){
+  const tt=document.getElementById('tt');
+  const sz=SIZES.find(s=>s.id===plant.size);
+  const pct=Math.round((sz.mult-1)*100);
+  let m=sz.mult*(G.weather.wm||1);
+  if(plant.mut==='moonlit')m*=5;
+  const val=Math.round(sd.base*m);
+  const tl=plant.done?'Ready!':Math.round((1-plant.prog)*sd.grow)+'s left';
+  tt.innerHTML=`<div class="tt-n">${sd.name}</div><div class="tt-s">Size: ${sz.label} (${pct>=0?'+':''}${pct}%)</div>${plant.mut?`<div class="tt-m">✨ ${plant.mut}</div>`:''}<div class="tt-v">Value: $${val}</div><div class="tt-t">${tl}</div>`;
+  tt.classList.add('show');ttOn=true;moveTT(e);
+}
+function hideTT(){document.getElementById('tt').classList.remove('show');ttOn=false;}
+function moveTT(e){const tt=document.getElementById('tt');tt.style.left=(e.clientX+18)+'px';tt.style.top=(e.clientY+6)+'px';}
+document.addEventListener('mousemove',e=>{if(ttOn)moveTT(e);});
+
+// ── CURSOR ──
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+function updateCursor(){
+  const c=document.getElementById('cursor'),l=document.getElementById('cursor-label');
+  if(G.selSlot!==null){const ref=G.bar[G.selSlot];if(ref!==null&&G.inv[ref]){l.textContent=G.inv[ref].icon;c.classList.add('has-seed');return;}}
+  l.textContent='';c.classList.remove('has-seed');
+}
+
+// ── DAY/NIGHT ──
+function tickDN(dt){
+  G.tod=(G.tod+dt/60)%1;
+  const was=G.isNight;G.isNight=G.tod>=0.5;
+  const h=Math.floor(G.tod*24),m=Math.floor((G.tod*24%1)*60);
+  document.getElementById('time-lbl').textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
+  document.getElementById('day-lbl').textContent='Day '+G.day;
+  if(G.isNight&&!was){document.body.classList.add('night');switchMusic('night');}
+  else if(!G.isNight&&was){document.body.classList.remove('night');G.day++;switchMusic('main');}
+}
+
+// ── NOTIFY ──
+function notify(msg){
+  const c=document.getElementById('notifs'),d=document.createElement('div');
+  d.className='notif';d.textContent=msg;c.appendChild(d);
+  setTimeout(()=>d.remove(),3200);
+}
+
+// ── MAIN LOOP ──
+let lastT=performance.now(),mutT=0,shopT=0,wxT=0;
+function loop(now){
+  const dt=Math.min((now-lastT)/1000,0.5);lastT=now;
+  G.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog+=dt/p.plant.growTime;if(p.plant.prog>=1){p.plant.prog=1;p.plant.done=true;}}});
+  wxT+=dt;if(wxT>=G.weatherNext){wxT=0;G.weatherNext=280+Math.random()*60;if(Math.random()<0.1){const w=WEATHERS[Math.floor(Math.random()*WEATHERS.length)];if(w.id!==G.weather.id){setWeather(w);notify(w.emoji+' Weather: '+w.name);}}}
+  mutT+=dt;if(mutT>=10){mutT=0;if(G.weather.mut)tryMutate();tryMoonlit();}
+  shopT+=dt;if(shopT>=300){shopT=0;restock();}
+  const rem=Math.max(0,300-shopT);
+  document.getElementById('restock-time').textContent=Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+  tickDN(dt);tickParts();drawParts();
+  if(Math.floor(now/30000)!==Math.floor((now-dt*1000)/30000)){G._ts=Date.now();save();}
+  const c=document.getElementById('cursor'),l=document.getElementById('cursor-label');
+  c.style.left=mx+'px';c.style.top=my+'px';l.style.left=mx+'px';l.style.top=my+'px';
+  if(Math.floor(now/500)!==Math.floor((now-dt*1000)/500)){renderPlots();renderBar();renderMoney();}
+  requestAnimationFrame(loop);
+}
+
+// ── EVENTS ──
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.getElementById('inv-open-btn').onclick=()=>{document.getElementById('inv-modal').classList.add('open');renderInvModal();};
+document.getElementById('inv-close').onclick=()=>document.getElementById('inv-modal').classList.remove('open');
+document.getElementById('inv-modal').onclick=e=>{if(e.target.id==='inv-modal')document.getElementById('inv-modal').classList.remove('open');};
+document.getElementById('sell-all-btn').onclick=sellAll;
+document.getElementById('fav-btn').onclick=function(){G.favMode=!G.favMode;this.classList.toggle('on',G.favMode);this.textContent=G.favMode?'♥ Favorite (ON)':'♡ Favorite';};
+document.getElementById('settings-btn-r').onclick=()=>document.getElementById('set-modal').classList.add('open');
+document.getElementById('set-close').onclick=()=>document.getElementById('set-modal').classList.remove('open');
+document.getElementById('tog-music').onclick=function(){G.musicOn=!G.musicOn;this.textContent=G.musicOn?'ON':'OFF';this.classList.toggle('on',G.musicOn);G.musicOn?switchMusic(G.isNight?'night':'main'):stopMusic();};
+document.getElementById('tog-sfx').onclick=function(){G.sfxOn=!G.sfxOn;this.textContent=G.sfxOn?'ON':'OFF';this.classList.toggle('on',G.sfxOn);};
+document.getElementById('tog-par').onclick=function(){G.partOn=!G.partOn;this.textContent=G.partOn?'ON':'OFF';this.classList.toggle('on',G.partOn);if(!G.partOn)parts=[];};
+document.querySelectorAll('.ifbtn').forEach(b=>{b.onclick=()=>{document.querySelectorAll('.ifbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');invFilter=b.dataset.f;renderInvModal();};});
+document.addEventListener('keydown',e=>{
+  const n=parseInt(e.key);
+  if(n>=1&&n<=9){G.selSlot=G.selSlot===(n-1)?null:n-1;updateCursor();renderBar();}
+  else if(e.key==='0'){G.selSlot=G.selSlot===9?null:9;updateCursor();renderBar();}
+  else if(e.key==='Escape'){G.selSlot=null;updateCursor();renderBar();document.getElementById('inv-modal').classList.remove('open');document.getElementById('set-modal').classList.remove('open');hideTT();}
+  else if(e.key==='f'||e.key==='F'){G.favMode=!G.favMode;const b=document.getElementById('fav-btn');b.classList.toggle('on',G.favMode);b.textContent=G.favMode?'♥ Favorite (ON)':'♡ Favorite';}
+});
+function resizeCv(){const cv=document.getElementById('weather-canvas');cv.width=window.innerWidth;cv.height=window.innerHeight;}
+window.addEventListener('resize',resizeCv);resizeCv();
+
+// ── INIT ──
+function init(){
+  load();
+  if(!G.shop||!G.shop.length)initShop();
+  document.body.classList.toggle('night',G.isNight);
+  renderAll();
+  document.addEventListener('click',function startMu(){buildAudio();switchMusic(G.isNight?'night':'main');document.removeEventListener('click',startMu);},{once:true});
+  lastT=performance.now();requestAnimationFrame(loop);
+  notify('🌱 Grow a Garden — buy seeds → plant → harvest!');
+  notify('💡 Keys 1–0 select bar · F = favorite mode · ESC = cancel');
+}
+init();
+</script>
+</body>
+</html>
