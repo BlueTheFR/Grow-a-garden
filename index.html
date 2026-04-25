@@ -11,203 +11,169 @@ body {
   overflow: hidden; width: 100vw; height: 100vh;
   cursor: none; user-select: none;
 }
-#cursor {
-  position: fixed; width: 18px; height: 18px;
-  border: 2px solid #fff; border-radius: 50%;
-  pointer-events: none; transform: translate(-50%,-50%); z-index: 9999;
-}
-#cursor.has-seed { background: rgba(80,200,80,0.35); border-color: #8f8; }
-#cursor-label {
-  position: fixed; font-size: 16px;
-  pointer-events: none; transform: translate(6px,-20px); z-index: 9999; line-height: 1;
-}
-#night-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,25,0);
-  pointer-events: none; transition: background 4s ease; z-index: 5;
-}
-body.night #night-overlay { background: rgba(0,0,25,0.5); }
-#weather-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
 
-/* Layout */
-#left-panel {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 180px;
-  background: #151515; border-right: 1px solid #2a2a2a;
-  display: flex; flex-direction: column; z-index: 10;
-}
-#right-panel {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 180px;
-  background: #151515; border-left: 1px solid #2a2a2a;
-  display: flex; flex-direction: column; z-index: 10;
-}
-#top-bar {
-  position: absolute; left: 180px; right: 180px; top: 0; height: 44px;
-  background: #151515; border-bottom: 1px solid #2a2a2a;
-  display: flex; align-items: center; gap: 8px; padding: 0 12px; z-index: 10;
-}
-#bottom-bar {
-  position: absolute; left: 180px; right: 180px; bottom: 0; height: 88px;
-  background: #151515; border-top: 1px solid #2a2a2a;
-  display: flex; align-items: center; padding: 6px 10px; gap: 4px; z-index: 10;
-  overflow-x: auto;
-}
-#map-area {
-  position: absolute; left: 180px; right: 180px; top: 44px; bottom: 88px;
-  background: #1a1a1a; overflow: hidden;
-  filter: grayscale(1);
-}
-#plots-wrap {
-  position: absolute; inset: 8px;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 3px;
-}
+/* ── CURSOR ── */
+#cursor { position:fixed; width:18px; height:18px; border:2px solid #fff; border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); z-index:9999; }
+#cursor.has-seed { background:rgba(80,200,80,0.35); border-color:#8f8; }
+#cursor-label { position:fixed; font-size:16px; pointer-events:none; transform:translate(6px,-20px); z-index:9999; line-height:1; }
+
+/* ── OVERLAYS ── */
+#night-overlay { position:fixed; inset:0; background:rgba(0,0,25,0); pointer-events:none; transition:background 4s ease; z-index:5; }
+body.night #night-overlay { background:rgba(0,0,25,0.5); }
+#weather-canvas { position:fixed; inset:0; pointer-events:none; z-index:6; }
+
+/* ── LAYOUT ── */
+#left-panel { position:absolute; left:0; top:0; bottom:0; width:180px; background:#151515; border-right:2px solid #333; display:flex; flex-direction:column; z-index:10; }
+#right-panel { position:absolute; right:0; top:0; bottom:0; width:180px; background:#151515; border-left:2px solid #333; display:flex; flex-direction:column; z-index:10; }
+#top-bar { position:absolute; left:180px; right:180px; top:0; height:44px; background:#151515; border-bottom:2px solid #333; display:flex; align-items:center; gap:8px; padding:0 12px; z-index:10; }
+#bottom-bar { position:absolute; left:180px; right:180px; bottom:0; height:88px; background:#151515; border-top:2px solid #333; display:flex; align-items:center; padding:6px 10px; gap:4px; z-index:10; overflow-x:auto; }
+#map-area { position:absolute; left:180px; right:180px; top:44px; bottom:88px; background:#1a1a1a; overflow:hidden; }
+
+/* ── PLOTS ── */
+#plots-wrap { position:absolute; inset:8px; display:grid; grid-template-columns:repeat(10,1fr); grid-auto-rows:1fr; gap:4px; }
 .plot {
-  aspect-ratio: 1 / 1;
-  background: #2b1a0a; border: 1px solid #3a2510; border-radius: 2px;
-  cursor: none; display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden; transition: border-color 0.15s;
+  aspect-ratio:1/1;
+  background:#231408;
+  border:2px solid #4a3520;
+  border-radius:3px; cursor:none;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:visible;
+  transition:border-color 0.15s, box-shadow 0.15s;
 }
-.plot:hover { border-color: #666; }
-.plot.ready { border-color: #4a4; }
-.plot.fav-plot { border-color: #f33 !important; }
-.plant-wrap {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 100%; height: 100%; gap: 1px; padding: 2px; position: relative;
-}
-.p-icon { line-height: 1; }
-.p-icon.sz-tiny   { font-size: 9px; }
-.p-icon.sz-small  { font-size: 12px; }
-.p-icon.sz-normal { font-size: 16px; }
-.p-icon.sz-big    { font-size: 20px; }
-.p-icon.sz-huge   { font-size: 24px; }
-/* Growing plants: colored (seeds/sprouts). Done crops: grayscale */
-.p-icon.growing   { filter: none; }
-.p-icon.done-crop { filter: grayscale(1) brightness(1.4); }
-.p-name { font-size: 5.5px; color: #777; text-align: center; overflow: hidden; max-width: 100%; white-space: nowrap; text-overflow: ellipsis; }
-.p-bar-bg { width: 75%; height: 2px; background: #333; border-radius: 1px; }
-.p-bar    { height: 100%; background: #4a4; border-radius: 1px; }
-.p-heart  { position: absolute; top: 1px; right: 2px; font-size: 9px; color: #f33; line-height: 1; }
-/* Mutation glows */
-.mut-moonlit  { box-shadow: inset 0 0 7px #44f; }
-.mut-stormy   { box-shadow: inset 0 0 7px #a4f; }
-.mut-rainbow  { box-shadow: inset 0 0 7px #f4a; }
-.mut-frosty   { box-shadow: inset 0 0 7px #4ff; }
-.mut-scorched { box-shadow: inset 0 0 7px #f84; }
-.mut-hydrated { box-shadow: inset 0 0 7px #4af; }
-.mut-misty    { box-shadow: inset 0 0 7px #aaa; }
+.plot:hover { border-color:#888; }
+.plot.ready { border-color:#3d3; box-shadow:0 0 4px #3d3; }
+.plot.fav-plot { border-color:#f33 !important; }
 
-/* LEFT PANEL */
-#money-row { padding: 6px 8px 3px; font-size: 13px; color: #fd4; font-weight: bold; }
-#inv-open-btn {
-  margin: 2px 6px 3px; background: #1e1e1e; border: 1px solid #333;
-  color: #bbb; padding: 4px 6px; border-radius: 3px; cursor: pointer;
-  font-family: inherit; font-size: 10px; text-align: left;
-}
-#inv-open-btn:hover { background: #252525; }
-#sell-shop {
-  flex: 1; margin: 3px 6px 6px; border: 2px solid #700;
-  background: #180a0a; border-radius: 4px;
-  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
-}
-.shop-hdr { padding: 4px 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
-#sell-hdr { background: #700; color: #fbb; }
-#sell-body { flex: 1; overflow-y: auto; padding: 3px; }
-.sell-row { display: flex; align-items: center; gap: 3px; padding: 2px 3px; border-bottom: 1px solid #240000; cursor: pointer; font-size: 10px; }
-.sell-row:hover { background: #200000; }
-.sell-row .sri { font-size: 13px; }
-.sell-row .srn { color: #faa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sell-row .srv { color: #f84; font-size: 9px; }
-#sell-all-btn { background: #900; color: #fcc; border: none; border-top: 1px solid #700; padding: 5px; cursor: pointer; font-family: inherit; font-size: 10px; font-weight: bold; }
-#sell-all-btn:hover { background: #b00; }
+/* mutation box-shadows stack via filter on children; plot border changes */
+.plot .plant-wrap { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; height:100%; gap:0; padding:2px 2px 0; position:relative; overflow:hidden; }
+.p-main { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; width:100%; }
+.p-icon { line-height:1; }
+.p-icon.sz-tiny   { font-size:9px; }
+.p-icon.sz-small  { font-size:12px; }
+.p-icon.sz-normal { font-size:16px; }
+.p-icon.sz-big    { font-size:20px; }
+.p-icon.sz-huge   { font-size:24px; }
 
-/* RIGHT PANEL */
-#weather-row { padding: 4px 8px 2px; font-size: 11px; color: #aaa; }
-#daytime-row { padding: 1px 8px 3px; font-size: 11px; color: #fd4; }
-#seed-shop {
-  flex: 1; margin: 3px 6px 3px; border: 2px solid #007;
-  background: #06060f; border-radius: 4px;
-  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
-}
-#seed-hdr { background: #007; color: #bbf; }
-#restock-time { font-size: 9px; color: #88f; }
-#seed-body { flex: 1; overflow-y: auto; padding: 3px; }
-.seed-row { display: flex; align-items: center; gap: 3px; padding: 2px 3px; border-bottom: 1px solid #040414; cursor: pointer; font-size: 10px; }
-.seed-row:hover { background: #050520; }
-.seed-row .sri { font-size: 13px; }
-.seed-row .srn { color: #aaf; }
-.seed-row .srp { color: #fd4; font-size: 9px; }
-.seed-row .srs { color: #555; font-size: 9px; }
-.rc { font-size: 8px; }
-.rc-common    { color: #888; } .rc-uncommon { color: #4e4; }
-.rc-rare      { color: #55f; } .rc-epic     { color: #a4f; } .rc-legendary { color: #fa3; }
-#settings-btn-r { margin: 3px 6px 6px; background: #1e1e1e; border: 1px solid #333; color: #bbb; padding: 4px 6px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; text-align: left; }
-#settings-btn-r:hover { background: #252525; }
+/* Growing = colored; done crop = full color (NOT grayscale) */
+.p-icon.growing   { filter:none; }
+.p-icon.done-crop { filter:none; } /* crops keep their color */
 
-/* TOP BAR */
-#fav-btn { background: #1e1e1e; border: 1px solid #333; color: #bbb; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 11px; }
-#fav-btn:hover { background: #252525; }
-#fav-btn.on { border-color: #f44; color: #f88; }
-#top-info { font-size: 10px; color: #555; }
+.p-name { font-size:5px; color:#777; text-align:center; overflow:hidden; max-width:100%; white-space:nowrap; text-overflow:ellipsis; }
+.p-bar-bg { width:80%; height:2px; background:#333; border-radius:1px; margin-top:1px; }
+.p-bar { height:100%; background:#4a4; border-radius:1px; }
+.p-heart { position:absolute; top:1px; right:2px; font-size:8px; color:#f33; line-height:1; z-index:2; }
 
-/* BOTTOM BAR */
-.b-slot { width: 68px; height: 68px; flex-shrink: 0; background: #1c1c1c; border: 1px solid #2e2e2e; border-radius: 3px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.b-slot:hover { border-color: #555; }
-.b-slot.sel { border: 2px solid #4e4; }
-.b-slot.empty { opacity: 0.3; }
-.b-si { font-size: 22px; }
-.b-sn { font-size: 8px; color: #777; text-align: center; max-width: 62px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.b-sq { font-size: 9px; color: #fd4; }
-.b-snum { font-size: 9px; color: #3a3a3a; }
+/* mutation icon row at bottom of plant */
+.p-muts { display:flex; flex-wrap:wrap; justify-content:center; gap:1px; min-height:8px; width:100%; padding:0 1px; }
+.p-mut-icon { font-size:7px; line-height:1; }
 
-/* TOOLTIP */
-#tt { position: fixed; background: rgba(12,12,12,0.97); border: 1px solid #555; border-radius: 4px; padding: 6px 10px; font-size: 11px; pointer-events: none; z-index: 10000; max-width: 200px; display: none; }
-#tt.show { display: block; }
-.tt-n { font-weight: bold; color: #fff; margin-bottom: 2px; }
-.tt-s { color: #aaa; font-size: 10px; }
-.tt-m { color: #b8f; font-size: 10px; }
-.tt-v { color: #fd4; font-size: 10px; }
-.tt-t { color: #666; font-size: 10px; }
+/* plot glow per mutation — we apply via inline style for stacking */
 
-/* NOTIFICATIONS */
-#notifs { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; }
-.notif { background: rgba(20,20,20,0.95); border: 1px solid #555; border-radius: 4px; padding: 4px 14px; font-size: 11px; animation: nf 3s forwards; white-space: nowrap; }
+/* ── LEFT PANEL ── */
+#money-row { padding:6px 8px 3px; font-size:13px; color:#fd4; font-weight:bold; }
+#inv-open-btn { margin:2px 6px 3px; background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 6px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; text-align:left; }
+#inv-open-btn:hover { background:#252525; }
+#sell-shop { flex:1; margin:3px 6px 6px; border:2px solid #700; background:#180a0a; border-radius:4px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+.shop-hdr { padding:4px 8px; font-size:11px; font-weight:bold; display:flex; align-items:center; justify-content:space-between; }
+#sell-hdr { background:#700; color:#fbb; }
+#sell-body { flex:1; overflow-y:auto; padding:3px; }
+.sell-row { display:flex; align-items:center; gap:3px; padding:2px 3px; border-bottom:1px solid #240000; cursor:pointer; font-size:10px; }
+.sell-row:hover { background:#200000; }
+.sell-row .sri { font-size:13px; }
+.sell-row .srn { color:#faa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sell-row .srv { color:#f84; font-size:9px; }
+#sell-all-btn { background:#900; color:#fcc; border:none; border-top:1px solid #700; padding:5px; cursor:pointer; font-family:inherit; font-size:10px; font-weight:bold; }
+#sell-all-btn:hover { background:#b00; }
+
+/* ── RIGHT PANEL ── */
+#weather-row { padding:4px 8px 2px; font-size:11px; color:#aaa; }
+#wx-timer-row { padding:0px 8px 2px; font-size:10px; color:#666; }
+#daytime-row { padding:1px 8px 3px; font-size:11px; color:#fd4; }
+#seed-shop { flex:1; margin:3px 6px 3px; border:2px solid #007; background:#06060f; border-radius:4px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+#seed-hdr { background:#007; color:#bbf; }
+#restock-time { font-size:9px; color:#88f; }
+#seed-body { flex:1; overflow-y:auto; padding:3px; }
+.seed-row { display:flex; align-items:center; gap:3px; padding:2px 3px; border-bottom:1px solid #040414; cursor:pointer; font-size:10px; }
+.seed-row:hover { background:#050520; }
+.seed-row .sri { font-size:13px; }
+.seed-row .srn { color:#aaf; }
+.seed-row .srp { color:#fd4; font-size:9px; }
+.seed-row .srs { color:#555; font-size:9px; }
+.rc { font-size:8px; }
+.rc-common { color:#888; } .rc-uncommon { color:#4e4; } .rc-rare { color:#55f; } .rc-epic { color:#a4f; } .rc-legendary { color:#fa3; }
+#settings-btn-r { margin:3px 6px 6px; background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 6px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; text-align:left; }
+#settings-btn-r:hover { background:#252525; }
+
+/* ── TOP BAR ── */
+#fav-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 10px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; }
+#fav-btn:hover { background:#252525; }
+#fav-btn.on { border-color:#f44; color:#f88; }
+#top-info { font-size:10px; color:#555; }
+
+/* ── BOTTOM BAR ── */
+.b-slot { width:68px; height:68px; flex-shrink:0; background:#1c1c1c; border:1px solid #2e2e2e; border-radius:3px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.b-slot:hover { border-color:#555; }
+.b-slot.sel { border:2px solid #4e4; }
+.b-slot.empty { opacity:0.3; }
+.b-si { font-size:22px; }
+.b-sn { font-size:8px; color:#777; text-align:center; max-width:62px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.b-sq { font-size:9px; color:#fd4; }
+.b-snum { font-size:9px; color:#3a3a3a; }
+
+/* ── TOOLTIP ── */
+#tt { position:fixed; background:rgba(10,10,10,0.97); border:1px solid #555; border-radius:5px; padding:7px 11px; font-size:11px; pointer-events:none; z-index:10000; max-width:220px; display:none; line-height:1.5; }
+#tt.show { display:block; }
+.tt-n { font-weight:bold; color:#fff; font-size:12px; }
+.tt-fav { color:#f33; font-size:10px; }
+.tt-s { color:#aaa; font-size:10px; }
+.tt-m { font-size:10px; }
+.tt-v { color:#fd4; font-size:10px; font-weight:bold; }
+.tt-base { color:#888; font-size:9px; }
+.tt-t { color:#666; font-size:10px; }
+
+/* ── NOTIFICATIONS ── */
+#notifs { position:fixed; top:52px; left:50%; transform:translateX(-50%); z-index:500; display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none; }
+.notif { background:rgba(20,20,20,0.95); border:1px solid #555; border-radius:4px; padding:4px 14px; font-size:11px; animation:nf 3s forwards; white-space:nowrap; }
 @keyframes nf { 0%{opacity:0;transform:translateY(-8px)} 12%{opacity:1;transform:translateY(0)} 75%{opacity:1} 100%{opacity:0} }
 
-/* INVENTORY MODAL */
-#inv-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; display: none; align-items: center; justify-content: center; }
-#inv-modal.open { display: flex; }
-#inv-box { background: #1c1c1c; border: 1px solid #444; border-radius: 8px; width: 620px; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden; }
-#inv-hdr { background: #232323; padding: 8px 14px; display: flex; align-items: center; border-bottom: 1px solid #2e2e2e; gap: 8px; }
-#inv-htitle { flex: 1; font-size: 13px; font-weight: bold; }
-#inv-close { background: none; border: none; color: #777; cursor: pointer; font-size: 17px; }
-#inv-filters { display: flex; gap: 4px; padding: 5px 10px; background: #1e1e1e; border-bottom: 1px solid #2e2e2e; }
-.ifbtn { background: #272727; border: 1px solid #333; color: #888; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: inherit; }
-.ifbtn:hover { background: #303030; }
-.ifbtn.active { background: #353535; color: #eee; border-color: #555; }
-#inv-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 4px; padding: 8px; overflow-y: auto; flex: 1; }
-.ig { background: #222; border: 1px solid #2e2e2e; border-radius: 4px; padding: 5px 3px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; min-height: 70px; transition: border-color 0.1s; }
-.ig:hover { border-color: #555; }
-.ig.faved { border-color: #f33; }
-.ig .ig-i { font-size: 20px; }
-.ig .ig-n { font-size: 9px; color: #888; text-align: center; }
-.ig .ig-q { font-size: 9px; color: #fd4; }
-.ig .ig-v { font-size: 8px; color: #666; }
-.ig .ig-f { position: absolute; top: 2px; right: 3px; color: #f33; font-size: 9px; }
+/* ── LIGHTNING FLASH ── */
+#lightning-flash { position:fixed; inset:0; background:rgba(180,180,255,0); pointer-events:none; z-index:7; transition:background 0.05s; }
+#lightning-flash.strike { background:rgba(180,180,255,0.35); }
 
-/* SETTINGS MODAL */
-#set-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 200; display: none; align-items: center; justify-content: center; }
-#set-modal.open { display: flex; }
-#set-box { background: #1c1c1c; border: 1px solid #444; border-radius: 8px; padding: 18px; width: 280px; display: flex; flex-direction: column; gap: 11px; }
-.set-title { font-size: 13px; font-weight: bold; }
-.set-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
-.tog { background: #272727; border: 1px solid #3a3a3a; color: #bbb; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; min-width: 46px; }
-.tog.on { background: #062006; border-color: #2a5a2a; color: #7d7; }
-.tog:hover { opacity: 0.85; }
+/* ── INV MODAL ── */
+#inv-modal { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:200; display:none; align-items:center; justify-content:center; }
+#inv-modal.open { display:flex; }
+#inv-box { background:#1c1c1c; border:1px solid #444; border-radius:8px; width:620px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden; }
+#inv-hdr { background:#232323; padding:8px 14px; display:flex; align-items:center; border-bottom:1px solid #2e2e2e; gap:8px; }
+#inv-htitle { flex:1; font-size:13px; font-weight:bold; }
+#inv-close { background:none; border:none; color:#777; cursor:pointer; font-size:17px; }
+#inv-filters { display:flex; gap:4px; padding:5px 10px; background:#1e1e1e; border-bottom:1px solid #2e2e2e; }
+.ifbtn { background:#272727; border:1px solid #333; color:#888; padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px; font-family:inherit; }
+.ifbtn:hover { background:#303030; }
+.ifbtn.active { background:#353535; color:#eee; border-color:#555; }
+#inv-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; padding:8px; overflow-y:auto; flex:1; }
+.ig { background:#222; border:1px solid #2e2e2e; border-radius:4px; padding:5px 3px; display:flex; flex-direction:column; align-items:center; cursor:pointer; position:relative; min-height:70px; transition:border-color 0.1s; }
+.ig:hover { border-color:#555; }
+.ig.faved { border-color:#f33; }
+.ig .ig-i { font-size:20px; }
+.ig .ig-n { font-size:9px; color:#888; text-align:center; }
+.ig .ig-q { font-size:9px; color:#fd4; }
+.ig .ig-v { font-size:8px; color:#666; }
+.ig .ig-f { position:absolute; top:2px; right:3px; color:#f33; font-size:9px; }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+/* ── SETTINGS MODAL ── */
+#set-modal { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:200; display:none; align-items:center; justify-content:center; }
+#set-modal.open { display:flex; }
+#set-box { background:#1c1c1c; border:1px solid #444; border-radius:8px; padding:18px; width:280px; display:flex; flex-direction:column; gap:11px; }
+.set-title { font-size:13px; font-weight:bold; }
+.set-row { display:flex; align-items:center; justify-content:space-between; font-size:12px; }
+.tog { background:#272727; border:1px solid #3a3a3a; color:#bbb; padding:3px 10px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; min-width:46px; }
+.tog.on { background:#062006; border-color:#2a5a2a; color:#7d7; }
+.tog:hover { opacity:0.85; }
+
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:#111; }
+::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
 </style>
 </head>
 <body>
@@ -215,6 +181,7 @@ body.night #night-overlay { background: rgba(0,0,25,0.5); }
 <div id="cursor-label"></div>
 <canvas id="weather-canvas"></canvas>
 <div id="night-overlay"></div>
+<div id="lightning-flash"></div>
 <div id="tt"></div>
 <div id="notifs"></div>
 
@@ -230,6 +197,7 @@ body.night #night-overlay { background: rgba(0,0,25,0.5); }
 
 <div id="right-panel">
   <div id="weather-row">☁ <span id="wx-name">Clear</span></div>
+  <div id="wx-timer-row">Next: <span id="wx-timer">10:00</span></div>
   <div id="daytime-row">🌞 <span id="day-lbl">Day 1</span> &nbsp;<span id="time-lbl">06:00</span></div>
   <div id="seed-shop">
     <div class="shop-hdr" id="seed-hdr">
@@ -243,7 +211,7 @@ body.night #night-overlay { background: rgba(0,0,25,0.5); }
 
 <div id="top-bar">
   <button id="fav-btn">♡ Favorite</button>
-  <span id="top-info">Each plot: 1 crop · 50 plots total · click plot to plant/harvest</span>
+  <span id="top-info">50 plots · click plot to plant/harvest · F=favorite mode</span>
 </div>
 
 <div id="map-area">
@@ -279,20 +247,140 @@ body.night #night-overlay { background: rgba(0,0,25,0.5); }
 </div>
 
 <script>
-const SAVE_KEY='gar_v3';
+/* ═══════════════════════════════════════
+   DATA
+═══════════════════════════════════════ */
+const SAVE_KEY='gar_v5';
+
+/* ═══════════════════════════════════════
+   I18N — French if navigator.language starts with 'fr', else English
+═══════════════════════════════════════ */
+const IS_FR = navigator.language && navigator.language.toLowerCase().startsWith('fr');
+
+const T = {
+  // UI labels
+  title:          IS_FR ? 'Faire Pousser un Jardin' : 'Grow a Garden',
+  money:          IS_FR ? '💰 $' : '💰 $',
+  invBtn:         IS_FR ? '📦 Inventaire (100 cases)' : '📦 Inventory (100 slots)',
+  sellShopHdr:    IS_FR ? '🔴 BOUTIQUE VENTE' : '🔴 SELL SHOP',
+  sellAllBtn:     IS_FR ? 'TOUT VENDRE (sauf favoris)' : 'SELL ALL (non-favorited)',
+  seedShopHdr:    IS_FR ? '🔵 BOUTIQUE GRAINES' : '🔵 SEED SHOP',
+  settingsBtn:    IS_FR ? '⚙ Paramètres' : '⚙ Settings',
+  favBtn:         IS_FR ? '♡ Favori' : '♡ Favorite',
+  favBtnOn:       IS_FR ? '♥ Favori (ON)' : '♥ Favorite (ON)',
+  topInfo:        IS_FR ? '50 parcelles · clic pour planter/récolter · F=mode favori' : '50 plots · click to plant/harvest · F=favorite mode',
+  invTitle:       IS_FR ? 'Inventaire' : 'Inventory',
+  fAll:           IS_FR ? 'Tout' : 'All',
+  fSeeds:         IS_FR ? 'Graines' : 'Seeds',
+  fCrops:         IS_FR ? 'Récoltes' : 'Crops',
+  fFavs:          IS_FR ? '♥ Favoris' : '♥ Favorites',
+  settingsTitle:  IS_FR ? '⚙ Paramètres' : '⚙ Settings',
+  music:          IS_FR ? 'Musique' : 'Music',
+  sfx:            IS_FR ? 'Effets sonores' : 'Sound FX',
+  particles:      IS_FR ? 'Particules météo' : 'Weather Particles',
+  close:          IS_FR ? 'Fermer' : 'Close',
+  on:             IS_FR ? 'ON' : 'ON',
+  off:            IS_FR ? 'OFF' : 'OFF',
+  // Notifications
+  notifWelcome:   IS_FR ? '🌱 Achetez des graines → plantez → récoltez !' : '🌱 Grow a Garden — buy seeds → plant → harvest!',
+  notifTips:      IS_FR ? '💡 Touches 1–0 sélect. · F=favori · les cultures repoussent' : '💡 Keys 1–0 select bar · F=favorite mode · crops regrow (except Carrot)',
+  notifBack:      IS_FR ? '🌙 Retour ! Croissance hors-ligne appliquée' : '🌙 Back! Offline growth applied',
+  notifRestock:   IS_FR ? '🛒 Boutique réapprovisionnée !' : '🛒 Shop Restocked!',
+  notifSold:      IS_FR ? '💰 Vendu pour $' : '💰 Sold for $',
+  notifBought:    IS_FR ? '🌱 Acheté ' : '🌱 Bought ',
+  notifSoldOne:   IS_FR ? '💰 Vendu ' : '💰 Sold ',
+  notifNoMoney:   IS_FR ? '❌ Pas assez d\'argent' : '❌ Not enough money',
+  notifNoStock:   IS_FR ? '❌ Rupture de stock' : '❌ Out of stock',
+  notifUnfav:     IS_FR ? '♥ Retirer des favoris pour récolter' : '♥ Unfavorite to harvest',
+  notifUnfavFirst:IS_FR ? '♥ Retirer des favoris d\'abord' : '♥ Unfavorite first',
+  notifMoonlit:   IS_FR ? '🌙 Clair de lune ! ×5 valeur !' : '🌙 Moonlit! ×5 value!',
+  notifMutation:  IS_FR ? '✨ Mutation ' : '✨ ',
+  notifMutSuffix: IS_FR ? ' !' : ' mutation!',
+  notifWeather:   IS_FR ? ' météo !' : ' weather!',
+  // Rarity labels
+  rCommon:    IS_FR ? 'commun'    : 'common',
+  rUncommon:  IS_FR ? 'peu commun': 'uncommon',
+  rRare:      IS_FR ? 'rare'      : 'rare',
+  rEpic:      IS_FR ? 'épique'    : 'epic',
+  rLegendary: IS_FR ? 'légendaire': 'legendary',
+  // Weather names
+  wClear:     IS_FR ? 'Dégagé'    : 'Clear',
+  wRain:      IS_FR ? 'Pluie'     : 'Rain',
+  wStorm:     IS_FR ? 'Orage'     : 'Storm',
+  wFog:       IS_FR ? 'Brouillard': 'Fog',
+  wFrost:     IS_FR ? 'Gel'       : 'Frost',
+  wHeat:      IS_FR ? 'Canicule'  : 'Heatwave',
+  wRainbow:   IS_FR ? 'Arc-en-ciel':'Rainbow',
+  // Weather timer labels
+  wxActive:   IS_FR ? 'Actif '    : 'Active ',
+  wxNext:     IS_FR ? 'Prochain ' : 'Next ',
+  wxDowntime: IS_FR ? '☀ Dégagé (accalmie)' : '☀ Clear (downtime)',
+  // Mutation labels
+  mMoonlit:   IS_FR ? 'Clair de lune' : 'Moonlit',
+  mRainbow:   IS_FR ? 'Arc-en-ciel'   : 'Rainbow',
+  mScorched:  IS_FR ? 'Brûlé'         : 'Scorched',
+  mFrosty:    IS_FR ? 'Glacé'         : 'Frosty',
+  mStormy:    IS_FR ? 'Orageux'       : 'Stormy',
+  mHydrated:  IS_FR ? 'Hydraté'       : 'Hydrated',
+  mMisty:     IS_FR ? 'Brumeux'       : 'Misty',
+  // Size labels
+  sTiny:   IS_FR ? 'Minuscule' : 'Tiny',
+  sSmall:  IS_FR ? 'Petit'     : 'Small',
+  sNormal: IS_FR ? 'Normal'    : 'Normal',
+  sBig:    IS_FR ? 'Grand'     : 'Big',
+  sHuge:   IS_FR ? 'Énorme'    : 'Huge',
+  // Tooltip
+  ttSize:    IS_FR ? 'Taille : ' : 'Size: ',
+  ttValue:   IS_FR ? 'Valeur : $': 'Value: $',
+  ttBase:    IS_FR ? 'Base : $'  : 'Base: $',
+  ttReady:   IS_FR ? 'Prêt !'    : 'Ready!',
+  ttLeft:    IS_FR ? 's restantes': 's left',
+  ttRegrow:  IS_FR ? ' ↺ repousse': ' ↺ regrow',
+  ttFaved:   IS_FR ? '♥ Favori'  : '♥ Favorited',
+  // Day label
+  dayLabel:  IS_FR ? 'Jour '     : 'Day ',
+  // Stock
+  stock:     IS_FR ? 'Stock : '  : 'Stock: ',
+  // Seed suffix
+  seedSuffix:IS_FR ? ' Graine'   : ' Seed',
+};
+
+// Helper: rarity display
+function rarityLabel(r){
+  return {common:T.rCommon,uncommon:T.rUncommon,rare:T.rRare,epic:T.rEpic,legendary:T.rLegendary}[r]||r;
+}
+
+// Seeds: name has EN key + FR translation
 const SEEDS=[
-  {id:'carrot',    name:'Carrot',      icon:'🥕',seedIcon:'🌱',rarity:'common',   price:10, grow:30, base:15  },
-  {id:'potato',    name:'Potato',      icon:'🥔',seedIcon:'🌱',rarity:'common',   price:50, grow:35, base:25  },
-  {id:'tomato',    name:'Tomato',      icon:'🍅',seedIcon:'🌿',rarity:'common',   price:150, grow:40, base:30  },
-  {id:'corn',      name:'Corn',        icon:'🌽',seedIcon:'🌿',rarity:'uncommon', price:300, grow:60, base:50  },
-  {id:'strawberry',name:'Strawberry',  icon:'🍓',seedIcon:'🌿',rarity:'uncommon', price:500, grow:70, base:65  },
-  {id:'blueberry', name:'Blueberry',   icon:'🫐',seedIcon:'🌳',rarity:'rare',     price:800, grow:100,base:130 },
-  {id:'watermelon',name:'Watermelon',  icon:'🍉',seedIcon:'🌳',rarity:'rare',     price:1000,grow:120,base:170 },
-  {id:'pineapple', name:'Pineapple',   icon:'🍍',seedIcon:'🌴',rarity:'epic',     price:2500,grow:180,base:450 },
-  {id:'mango',     name:'Mango',       icon:'🥭',seedIcon:'🌴',rarity:'epic',     price:3000,grow:200,base:540 },
-  {id:'dragonfruit',name:'DragonFruit',icon:'🍈',seedIcon:'🌴',rarity:'legendary',price:8000,grow:360,base:1600},
-  {id:'cacao',     name:'Cacao',       icon:'🍫',seedIcon:'🌴',rarity:'legendary',price:10000,grow:420,base:2200},
+  // ── COMMON ──
+  {id:'carrot',      name:IS_FR?'Carotte'       :'Carrot',       icon:'🥕', seedIcon:'🌱', rarity:'common',    price:10,    grow:30,  base:15,    multiHarvest:false},
+  {id:'potato',      name:IS_FR?'Pomme de terre' :'Potato',       icon:'🥔', seedIcon:'🌱', rarity:'common',    price:50,    grow:35,  base:25,    multiHarvest:true },
+  {id:'tomato',      name:IS_FR?'Tomate'         :'Tomato',       icon:'🍅', seedIcon:'🌿', rarity:'common',    price:150,   grow:40,  base:30,    multiHarvest:true },
+  {id:'lettuce',     name:IS_FR?'Laitue'         :'Lettuce',      icon:'🥬', seedIcon:'🌱', rarity:'common',    price:80,    grow:25,  base:18,    multiHarvest:true },
+  {id:'pepper',      name:IS_FR?'Piment'         :'Pepper',       icon:'🌶', seedIcon:'🌿', rarity:'common',    price:120,   grow:45,  base:28,    multiHarvest:true },
+  // ── UNCOMMON ──
+  {id:'corn',        name:IS_FR?'Maïs'           :'Corn',         icon:'🌽', seedIcon:'🌿', rarity:'uncommon',  price:300,   grow:60,  base:50,    multiHarvest:true },
+  {id:'strawberry',  name:IS_FR?'Fraise'         :'Strawberry',   icon:'🍓', seedIcon:'🌿', rarity:'uncommon',  price:500,   grow:70,  base:65,    multiHarvest:true },
+  {id:'eggplant',    name:IS_FR?'Aubergine'      :'Eggplant',     icon:'🍆', seedIcon:'🌿', rarity:'uncommon',  price:400,   grow:65,  base:55,    multiHarvest:true },
+  {id:'broccoli',    name:IS_FR?'Brocoli'        :'Broccoli',     icon:'🥦', seedIcon:'🌿', rarity:'uncommon',  price:350,   grow:55,  base:48,    multiHarvest:true },
+  {id:'peach',       name:IS_FR?'Pêche'          :'Peach',        icon:'🍑', seedIcon:'🌳', rarity:'uncommon',  price:600,   grow:80,  base:78,    multiHarvest:true },
+  // ── RARE ──
+  {id:'blueberry',   name:IS_FR?'Myrtille'       :'Blueberry',    icon:'🫐', seedIcon:'🌳', rarity:'rare',      price:800,   grow:100, base:130,   multiHarvest:true },
+  {id:'watermelon',  name:IS_FR?'Pastèque'       :'Watermelon',   icon:'🍉', seedIcon:'🌳', rarity:'rare',      price:1000,  grow:120, base:170,   multiHarvest:true },
+  {id:'cherry',      name:IS_FR?'Cerise'         :'Cherry',       icon:'🍒', seedIcon:'🌳', rarity:'rare',      price:1200,  grow:110, base:190,   multiHarvest:true },
+  {id:'grape',       name:IS_FR?'Raisin'         :'Grape',        icon:'🍇', seedIcon:'🌳', rarity:'rare',      price:900,   grow:105, base:155,   multiHarvest:true },
+  {id:'coconut',     name:IS_FR?'Noix de coco'   :'Coconut',      icon:'🥥', seedIcon:'🌴', rarity:'rare',      price:1500,  grow:130, base:220,   multiHarvest:true },
+  // ── EPIC ──
+  {id:'pineapple',   name:IS_FR?'Ananas'         :'Pineapple',    icon:'🍍', seedIcon:'🌴', rarity:'epic',      price:2500,  grow:180, base:450,   multiHarvest:true },
+  {id:'mango',       name:IS_FR?'Mangue'         :'Mango',        icon:'🥭', seedIcon:'🌴', rarity:'epic',      price:3000,  grow:200, base:540,   multiHarvest:true },
+  {id:'kiwi',        name:IS_FR?'Kiwi'           :'Kiwi',         icon:'🥝', seedIcon:'🌴', rarity:'epic',      price:2800,  grow:190, base:500,   multiHarvest:true },
+  {id:'lemon',       name:IS_FR?'Citron'         :'Lemon',        icon:'🍋', seedIcon:'🌴', rarity:'epic',      price:2200,  grow:170, base:400,   multiHarvest:true },
+  // ── LEGENDARY ──
+  {id:'dragonfruit', name:IS_FR?'Fruit du dragon':'Dragon Fruit',  icon:'🍈', seedIcon:'🌴', rarity:'legendary', price:8000,  grow:360, base:1600,  multiHarvest:true },
+  {id:'cacao',       name:IS_FR?'Cacao'          :'Cacao',        icon:'🍫', seedIcon:'🌴', rarity:'legendary', price:10000, grow:420, base:2200,  multiHarvest:true },
+  {id:'durian',      name:IS_FR?'Durian'         :'Durian',       icon:'🌵', seedIcon:'🌴', rarity:'legendary', price:12000, grow:480, base:2800,  multiHarvest:true },
 ];
+
 const SIZES=[
   {id:'tiny',  label:'Tiny',  mult:0.5 },
   {id:'small', label:'Small', mult:0.75},
@@ -300,38 +388,64 @@ const SIZES=[
   {id:'big',   label:'Big',   mult:1.5 },
   {id:'huge',  label:'Huge',  mult:2   },
 ];
+
+// Weather: active=5min, then clear=5min, total cycle=10min
+// During active weather, every 10s: 10% mutation chance
+// mut is the mutation name it applies
 const WEATHERS=[
-  {id:'clear',   name:'Clear',   emoji:'☀', mut:null,       wm:1.0, col:null  },
-  {id:'rain',    name:'Rain',    emoji:'🌧',mut:'hydrated',  wm:1.2, col:'#4af'},
-  {id:'storm',   name:'Storm',   emoji:'⛈',mut:'stormy',    wm:1.4, col:'#a4f'},
-  {id:'fog',     name:'Fog',     emoji:'🌫',mut:'misty',     wm:1.1, col:'#aaa'},
-  {id:'frost',   name:'Frost',   emoji:'❄', mut:'frosty',   wm:1.35,col:'#4ff'},
-  {id:'heatwave',name:'Heatwave',emoji:'🔥',mut:'scorched',  wm:1.3, col:'#f84'},
-  {id:'rainbow', name:'Rainbow', emoji:'🌈',mut:'rainbow',   wm:1.6, col:'#f4a'},
+  {id:'clear',   name:'Clear',   emoji:'☀', mut:null,       col:null,   glowColor:null    },
+  {id:'rain',    name:'Rain',    emoji:'🌧',mut:'hydrated',  col:'#4af', glowColor:'#4af'  },
+  {id:'storm',   name:'Storm',   emoji:'⛈',mut:'stormy',    col:'#a4f', glowColor:'#a4f'  },
+  {id:'fog',     name:'Fog',     emoji:'🌫',mut:'misty',     col:'#aaa', glowColor:'#aaa'  },
+  {id:'frost',   name:'Frost',   emoji:'❄', mut:'frosty',   col:'#4ff', glowColor:'#4ff'  },
+  {id:'heatwave',name:'Heatwave',emoji:'🔥',mut:'scorched',  col:'#f84', glowColor:'#f84'  },
+  {id:'rainbow', name:'Rainbow', emoji:'🌈',mut:'rainbow',   col:'#f4a', glowColor:'#f4a'  },
 ];
 
+// Mutation info: icon + multiplier + glow
+const MUT_DATA={
+  moonlit:  {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)', label:'Moonlit'},
+  rainbow:  {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)',label:'Rainbow'},
+  scorched: {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)', label:'Scorched'},
+  frosty:   {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)', label:'Frosty'},
+  stormy:   {icon:'⚡',mult:100, glow:'rgba(170,50,255,0.55)',label:'Stormy'},
+  hydrated: {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)', label:'Hydrated'},
+  misty:    {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)',label:'Misty'},
+};
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
 let G={
   money:50, day:1, tod:0, isNight:false,
-  weather:WEATHERS[0], weatherTimer:0, weatherNext:300,
+  weather:WEATHERS[0],
+  wxActive:false,      // is weather effect currently active?
+  wxDuration:0,        // seconds remaining in current phase
+  wxCycleNext:600,     // next weather check (10 min)
+  mutTimer:0,          // counts to 10s for mutation tick
   shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
   inv:[], bar:Array(10).fill(null), selSlot:null,
   favMode:false, musicOn:true, sfxOn:true, partOn:true,
 };
 
-// ── SAVE / LOAD ──
+/* ═══════════════════════════════════════
+   SAVE / LOAD
+═══════════════════════════════════════ */
 function save(){try{G._ts=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
 function load(){
   try{
-    const r=localStorage.getItem(SAVE_KEY); if(!r)return;
+    const r=localStorage.getItem(SAVE_KEY);if(!r)return;
     const s=JSON.parse(r);
     const el=s._ts?Math.floor((Date.now()-s._ts)/1000):0;
-    if(s.plots&&el>0) s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
-    Object.assign(G,s); G._ts=undefined;
-    if(el>0)notify('🌙 Back! Offline growth applied ('+el+'s)');
+    if(s.plots&&el>0)s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
+    Object.assign(G,s);G._ts=undefined;
+    if(el>0)notify('🌙 Back! Offline growth ('+el+'s) applied');
   }catch(e){}
 }
 
-// ── SHOP ──
+/* ═══════════════════════════════════════
+   SHOP
+═══════════════════════════════════════ */
 function initShop(){G.shop=SEEDS.map(s=>({id:s.id,qty:1,extra:0}));}
 function restock(){
   G.shop.forEach(item=>{
@@ -340,68 +454,108 @@ function restock(){
     const c={common:0.6,uncommon:0.35,rare:0.2,epic:0.1,legendary:0.04}[sd.rarity]||0.1;
     item.extra=Math.random()<c?1+Math.floor(Math.random()*4):0;
   });
-  notify('🛒 Shop Restocked!'); sfx('restock'); renderSeedShop();
+  notify('🛒 Shop Restocked!');sfx('restock');renderSeedShop();
 }
 
-// ── INV ──
+/* ═══════════════════════════════════════
+   INVENTORY
+═══════════════════════════════════════ */
 function addInv(item){
   if(item.type==='seed'){const i=G.inv.findIndex(x=>x.type==='seed'&&x.seedId===item.seedId);if(i>=0){G.inv[i].qty++;return;}}
-  if(item.type==='crop'){const i=G.inv.findIndex(x=>x.type==='crop'&&x.seedId===item.seedId&&x.mut===item.mut&&x.size===item.size);if(i>=0){G.inv[i].qty++;return;}}
+  if(item.type==='crop'){
+    // Stack crops by seedId+muts+size
+    const mutsKey=JSON.stringify((item.muts||[]).slice().sort());
+    const i=G.inv.findIndex(x=>x.type==='crop'&&x.seedId===item.seedId&&JSON.stringify((x.muts||[]).slice().sort())===mutsKey&&x.size===item.size);
+    if(i>=0){G.inv[i].qty++;return;}
+  }
   G.inv.push({...item,qty:1});
 }
 function seedInvIdx(sid){return G.inv.findIndex(x=>x.type==='seed'&&x.seedId===sid);}
 
-// ── PLANT / HARVEST ──
-function plantPlot(idx){
-  if(G.selSlot===null)return;
-  const ref=G.bar[G.selSlot]; if(ref===null)return;
-  const item=G.inv[ref]; if(!item||item.type!=='seed')return;
-  if(G.plots[idx].plant)return;
-  const sd=SEEDS.find(s=>s.id===item.seedId);
-  G.plots[idx].plant={seedId:item.seedId,prog:0,growTime:sd.grow,done:false,mut:null,size:SIZES[Math.floor(Math.random()*SIZES.length)].id,fav:false};
-  item.qty--;
-  if(item.qty<=0){G.inv.splice(ref,1);G.bar=G.bar.map(b=>b===ref?null:(b>ref?b-1:b));if(G.selSlot!==null&&G.bar[G.selSlot]===null)G.selSlot=null;}
-  sfx('plant'); renderAll(); save();
-}
-function harvestPlot(idx){
-  const plot=G.plots[idx]; if(!plot.plant||!plot.plant.done)return;
-  const p=plot.plant; if(p.fav){notify('♥ Unfavorite to harvest');return;}
-  const sd=SEEDS.find(s=>s.id===p.seedId);
-  const sz=SIZES.find(s=>s.id===p.size);
-  let m=sz.mult*(G.weather.wm||1);
-  if(p.mut==='moonlit') m*=5;
-  if(p.mut==='rainbow') m*=50;
-  if(p.mut==='scorched')m*=25;
-  if(p.mut==='frosty')  m*=2;
-  if(p.mut==='stormy')  m*=100;
-  if(p.mut==='hydrated')m*=2;
-  const val=Math.round(sd.base*m);
-  addInv({type:'crop',seedId:p.seedId,icon:sd.icon,name:sd.name,val,mut:p.mut,size:p.size,fav:false});
-  plot.plant=null; sfx('harvest'); renderAll(); save();
-}
-function toggleFavPlot(idx){
-  const p=G.plots[idx].plant; if(!p)return;
-  p.fav=!p.fav; renderPlots(); save();
+/* ═══════════════════════════════════════
+   CALC VALUE
+═══════════════════════════════════════ */
+function calcVal(plant){
+  const sd=SEEDS.find(s=>s.id===plant.seedId);
+  const sz=SIZES.find(s=>s.id===plant.size);
+  let m=sz.mult;
+  (plant.muts||[]).forEach(mut=>{
+    if(MUT_DATA[mut])m*=MUT_DATA[mut].mult;
+  });
+  return {val:Math.round(sd.base*m), base:sd.base, sizeMult:sz.mult, m};
 }
 
-// ── SELL ──
+/* ═══════════════════════════════════════
+   PLANT / HARVEST
+═══════════════════════════════════════ */
+function plantPlot(idx){
+  if(G.selSlot===null)return;
+  const ref=G.bar[G.selSlot];if(ref===null)return;
+  const item=G.inv[ref];if(!item||item.type!=='seed')return;
+  if(G.plots[idx].plant)return;
+  const sd=SEEDS.find(s=>s.id===item.seedId);
+  G.plots[idx].plant={
+    seedId:item.seedId, prog:0, growTime:sd.grow,
+    done:false, muts:[], size:SIZES[Math.floor(Math.random()*SIZES.length)].id,
+    fav:false, regrow:false
+  };
+  item.qty--;
+  if(item.qty<=0){
+    G.inv.splice(ref,1);
+    G.bar=G.bar.map(b=>b===ref?null:(b>ref?b-1:b));
+    // If selected slot is now empty, deselect it
+    if(G.selSlot!==null&&G.bar[G.selSlot]===null) G.selSlot=null;
+  }
+  sfx('plant'); updateCursor(); renderAll(); save();
+}
+
+function harvestPlot(idx){
+  const plot=G.plots[idx];if(!plot.plant||!plot.plant.done)return;
+  const p=plot.plant;
+  if(p.fav){notify('♥ Unfavorite to harvest');return;}
+  const sd=SEEDS.find(s=>s.id===p.seedId);
+  const{val}=calcVal(p);
+  addInv({type:'crop',seedId:p.seedId,icon:sd.icon,name:sd.name,val,muts:p.muts,size:p.size,fav:false});
+
+  if(sd.multiHarvest){
+    // Regrow at 2× speed — keep SIZE, lose all mutations
+    p.prog=0; p.done=false; p.fav=false;
+    p.muts=[];  // mutations cleared on regrow
+    p.growTime=Math.max(5, Math.round(sd.grow/2));
+    p.regrow=true;
+  } else {
+    plot.plant=null;
+  }
+  sfx('harvest');renderAll();save();
+}
+
+function toggleFavPlot(idx){
+  const p=G.plots[idx].plant;if(!p)return;
+  p.fav=!p.fav;renderPlots();save();
+}
+
+/* ═══════════════════════════════════════
+   SELL
+═══════════════════════════════════════ */
 function sellAll(){
   let earned=0;
   G.inv=G.inv.filter(i=>{if(i.type==='crop'&&!i.fav){earned+=i.val*i.qty;return false;}return true;});
   G.bar=G.bar.map(b=>(b!==null&&G.inv[b])?b:null);
-  G.money+=earned; if(earned>0)notify('💰 Sold for $'+earned.toLocaleString()+'!');
-  renderAll(); save();
+  G.money+=earned;if(earned>0)notify('💰 Sold for $'+earned.toLocaleString()+'!');
+  renderAll();save();
 }
 function sellOne(idx){
-  const item=G.inv[idx]; if(!item||item.type!=='crop'||item.fav){notify('♥ Unfavorite first');return;}
-  G.money+=item.val*item.qty; notify('💰 Sold '+item.name+' $'+(item.val*item.qty).toLocaleString());
-  G.inv.splice(idx,1); G.bar=G.bar.map(b=>b===idx?null:(b>idx?b-1:b));
-  renderAll(); save();
+  const item=G.inv[idx];if(!item||item.type!=='crop'||item.fav){notify('♥ Unfavorite first');return;}
+  G.money+=item.val*item.qty;notify('💰 Sold '+item.name+' $'+(item.val*item.qty).toLocaleString());
+  G.inv.splice(idx,1);G.bar=G.bar.map(b=>b===idx?null:(b>idx?b-1:b));
+  renderAll();save();
 }
 
-// ── BUY ──
+/* ═══════════════════════════════════════
+   BUY
+═══════════════════════════════════════ */
 function buySeed(sid){
-  const sd=SEEDS.find(s=>s.id===sid); if(!sd)return;
+  const sd=SEEDS.find(s=>s.id===sid);if(!sd)return;
   if(G.money<sd.price){notify('❌ Not enough money');return;}
   const si=G.shop.find(s=>s.id===sid);
   if((si.qty+si.extra)<=0){notify('❌ Out of stock');return;}
@@ -410,10 +564,12 @@ function buySeed(sid){
   addInv({type:'seed',seedId:sd.id,icon:sd.icon,name:sd.name+' Seed'});
   const empty=G.bar.findIndex(b=>b===null);
   if(empty>=0){const ii=seedInvIdx(sd.id);if(ii>=0&&!G.bar.includes(ii))G.bar[empty]=ii;}
-  sfx('buy'); notify('🌱 Bought '+sd.name+' Seed'); renderAll(); save();
+  sfx('buy');notify('🌱 Bought '+sd.name+' Seed');renderAll();save();
 }
 
-// ── SOUND ──
+/* ═══════════════════════════════════════
+   SOUND
+═══════════════════════════════════════ */
 let actx=null;
 function getACtx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
 function sfx(type){
@@ -421,19 +577,18 @@ function sfx(type){
   try{
     const ctx=getACtx(),o=ctx.createOscillator(),g=ctx.createGain();
     o.connect(g);g.connect(ctx.destination);
-    const T={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth']};
+    const T={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth'],lightning:[120,0.3,'sawtooth']};
     const[f,v,tp]=T[type]||[440,0.07,'sine'];
     o.type=tp;o.frequency.value=f;
     g.gain.setValueAtTime(v,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
-    o.start();o.stop(ctx.currentTime+0.3);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    o.start();o.stop(ctx.currentTime+0.4);
   }catch(e){}
 }
 
-// ── MUSIC ──
-// Tracks map to the files shown in the screenshot:
-//   Main: "Grow a Garden Soundtrack - Main Theme.mp3", "Grow a Garden Soundtrack - Main Theme 4.mp3"
-//   Night: "Grow a Garden Soundtrack - Night Theme 1.mp3", "Grow a Garden Soundtrack - Night Theme 2.mp3"
+/* ═══════════════════════════════════════
+   MUSIC
+═══════════════════════════════════════ */
 const TRACKS={
   main:['Grow a Garden Soundtrack - Main Theme.mp3','Grow a Garden Soundtrack - Main Theme 4.mp3'],
   night:['Grow a Garden Soundtrack - Night Theme 1.mp3','Grow a Garden Soundtrack - Night Theme 2.mp3'],
@@ -441,75 +596,225 @@ const TRACKS={
 let audioEl=null,curTrackType=null,tidxDay=0,tidxNight=0,muSwitch=null;
 function buildAudio(){
   if(audioEl)return;
-  audioEl=new Audio(); audioEl.loop=false; audioEl.volume=0.35;
-  audioEl.addEventListener('ended',()=>advanceTrack(curTrackType));
+  audioEl=new Audio();
+  audioEl.volume=0.35;
+  audioEl.addEventListener('ended',()=>{
+    // When a track ends, play the next track of the same type (loop through both)
+    advanceTrack(curTrackType);
+  });
 }
 function playTrack(type){
   if(!G.musicOn)return;
   buildAudio();
   const list=TRACKS[type]||TRACKS.main;
   const idx=(type==='night'?tidxNight:tidxDay)%list.length;
-  audioEl.src=list[idx]; audioEl.currentTime=0;
+  audioEl.src=list[idx];
+  audioEl.currentTime=0;
   audioEl.play().catch(()=>{});
   curTrackType=type;
 }
 function advanceTrack(type){
-  if(type==='night')tidxNight=(tidxNight+1)%TRACKS.night.length;
-  else              tidxDay  =(tidxDay+1)  %TRACKS.main.length;
+  // Cycle through the 2 tracks for this type indefinitely
+  if(type==='night') tidxNight=(tidxNight+1)%TRACKS.night.length;
+  else               tidxDay  =(tidxDay  +1)%TRACKS.main.length;
   playTrack(type);
 }
 function switchMusic(type){
   if(!G.musicOn){stopMusic();return;}
-  if(curTrackType===type)return;
+  if(curTrackType===type)return; // already playing right type
   if(muSwitch)clearTimeout(muSwitch);
   stopMusic();
+  // 2-second silence gap when switching day↔night
   muSwitch=setTimeout(()=>playTrack(type),2000);
 }
 function stopMusic(){if(!audioEl)return;audioEl.pause();audioEl.src='';curTrackType=null;}
 
-// ── PARTICLES ──
+/* ═══════════════════════════════════════
+   WEATHER SYSTEM
+   Cycle: every 10 min, roll a weather
+   Active phase: 5 min (weather effects can mutate)
+   Then: 5 min clear (no mutation from weather)
+═══════════════════════════════════════ */
 let parts=[];
-function setWeather(w){
+let lightningTimer=0, nextLightningTime=3+Math.random()*4;
+
+function setWeather(w, active){
   G.weather=w;
-  document.getElementById('wx-name').textContent=w.emoji+' '+w.name;
+  G.wxActive=active;
+  document.getElementById('wx-name').textContent=w.emoji+' '+w.name+(active?'':' (clearing)');
   parts=[];
-  if(G.partOn&&w.col)spawnParts(w);
+  lightningTimer=0; nextLightningTime=2+Math.random()*4;
+  if(G.partOn&&active) spawnWeatherParts(w);
 }
-function spawnParts(w){
+
+function spawnWeatherParts(w){
   const cv=document.getElementById('weather-canvas');
-  for(let i=0;i<70;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:w.id==='storm'?(-1.5-Math.random()*2):0,vy:w.id==='fog'?0.08:(1+Math.random()*1.5),r:w.id==='fog'?18+Math.random()*25:1.5+Math.random()*2,a:w.id==='fog'?0.05:0.25+Math.random()*0.35,c:w.col,type:w.id});
+  const W=cv.width, H=cv.height;
+  parts=[];
+  if(w.id==='rain'){
+    for(let i=0;i<130;i++) parts.push({type:'rain',x:Math.random()*W,y:Math.random()*H,vx:-0.8,vy:6+Math.random()*3,len:9+Math.random()*6,a:0.22+Math.random()*0.18,c:'#88ccff'});
+  } else if(w.id==='storm'){
+    // Heavy angled rain
+    for(let i=0;i<160;i++) parts.push({type:'rain',x:Math.random()*W,y:Math.random()*H,vx:-2.5,vy:7+Math.random()*5,len:12+Math.random()*10,a:0.28+Math.random()*0.22,c:'#9999ee'});
+  } else if(w.id==='frost'){
+    // Slowly falling snowflakes
+    for(let i=0;i<80;i++) parts.push({type:'flake',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.4,vy:0.4+Math.random()*0.7,r:2+Math.random()*3,a:0.6+Math.random()*0.35,c:'#ddeeff',spin:Math.random()*Math.PI*2,dspin:(Math.random()-0.5)*0.04});
+  } else if(w.id==='fog'){
+    for(let i=0;i<40;i++) parts.push({type:'fog',x:Math.random()*W,y:H*0.15+Math.random()*H*0.75,vx:0.12+Math.random()*0.15,vy:0,r:55+Math.random()*90,a:0.035+Math.random()*0.03,c:'#aabbcc'});
+  } else if(w.id==='heatwave'){
+    // Rising orange/yellow shimmer
+    for(let i=0;i<70;i++) parts.push({type:'heat',x:Math.random()*W,y:H*0.4+Math.random()*H*0.6,vx:(Math.random()-0.5)*0.5,vy:-(0.6+Math.random()*1.8),r:2+Math.random()*4,a:0.18+Math.random()*0.18,c:Math.random()<0.5?'#ff7722':'#ffaa33',life:1,maxLife:50+Math.random()*70});
+  } else if(w.id==='rainbow'){
+    // Multi-color sparkle dots floating up
+    const cols=['#ff4444','#ff8800','#ffdd00','#44dd44','#3399ff','#aa44ff','#ff44aa'];
+    for(let i=0;i<100;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.7,vy:-0.4-Math.random()*0.7,r:2+Math.random()*2.5,a:0.5+Math.random()*0.45,c:cols[i%cols.length],life:1,maxLife:70+Math.random()*90});
+  }
 }
+
 function tickParts(){
   if(!G.partOn){parts=[];return;}
   const cv=document.getElementById('weather-canvas');
-  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.y>cv.height){p.y=-8;p.x=Math.random()*cv.width;}if(p.x<-10)p.x=cv.width;});
+  const W=cv.width,H=cv.height;
+  parts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.spin!==undefined) p.spin+=p.dspin||0;
+    if(p.type==='heat'||p.type==='spark'){
+      p.life-=1/p.maxLife;
+      p.a=Math.max(0,p.life*(p.type==='heat'?0.28:0.6));
+      if(p.life<=0){
+        p.life=1; p.maxLife=50+Math.random()*80;
+        if(p.type==='heat'){p.x=Math.random()*W;p.y=H*0.4+Math.random()*H*0.6;}
+        else{p.x=Math.random()*W;p.y=H*0.2+Math.random()*H*0.7;}
+      }
+    }
+    if(p.type==='rain'){if(p.y>H+p.len){p.y=-p.len;p.x=Math.random()*W;}if(p.x<-30)p.x=W+30;}
+    else if(p.type==='flake'){if(p.y>H){p.y=-10;p.x=Math.random()*W;}if(p.x<0)p.x=W;if(p.x>W)p.x=0;}
+    else if(p.type==='fog'){if(p.x>W+p.r)p.x=-p.r;}
+  });
 }
+
 function drawParts(){
   const cv=document.getElementById('weather-canvas'),ctx=cv.getContext('2d');
   ctx.clearRect(0,0,cv.width,cv.height);
   if(!G.partOn||!parts.length)return;
-  parts.forEach(p=>{ctx.globalAlpha=p.a;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+  parts.forEach(p=>{
+    const alpha=Math.max(0,p.a);
+    ctx.globalAlpha=alpha;
+    if(p.type==='rain'){
+      ctx.strokeStyle=p.c; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+p.vx*2.5,p.y+p.vy*2.5); ctx.stroke();
+    } else if(p.type==='flake'){
+      ctx.strokeStyle=p.c; ctx.lineWidth=1;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.spin||0);
+      for(let a=0;a<6;a++){
+        ctx.save(); ctx.rotate(a*Math.PI/3);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-p.r); ctx.stroke();
+        // small branches
+        ctx.beginPath(); ctx.moveTo(0,-p.r*0.5); ctx.lineTo(p.r*0.3,-p.r*0.75); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,-p.r*0.5); ctx.lineTo(-p.r*0.3,-p.r*0.75); ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+    } else if(p.type==='fog'){
+      const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      grad.addColorStop(0,p.c); grad.addColorStop(1,'transparent');
+      ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    } else {
+      // heat shimmer / sparkle: soft glow dot
+      ctx.shadowBlur=6; ctx.shadowColor=p.c;
+      ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  });
   ctx.globalAlpha=1;
 }
 
-// ── MUTATION ──
+// Lightning strike: either hits a crop (to mutate it) or random position
+function doLightningStrike(targetPlotEl){
+  if(!G.partOn)return;
+  const fl=document.getElementById('lightning-flash');
+  fl.classList.add('strike');
+  sfx('lightning');
+  setTimeout(()=>fl.classList.remove('strike'),80);
+
+  // draw bolt on weather canvas
+  const cv=document.getElementById('weather-canvas');
+  const ctx=cv.getContext('2d');
+  let x,y;
+  if(targetPlotEl){
+    const rect=targetPlotEl.getBoundingClientRect();
+    x=rect.left+rect.width/2;y=rect.top;
+  } else {
+    // Map area only
+    const ma=document.getElementById('map-area');
+    const mr=ma.getBoundingClientRect();
+    x=mr.left+Math.random()*mr.width;
+    y=mr.top+Math.random()*mr.height*0.3;
+  }
+  drawLightningBolt(ctx, x, cv.height*0.05, x+(Math.random()-0.5)*60, y);
+  setTimeout(()=>{ drawParts(); },180);
+}
+
+function drawLightningBolt(ctx,x1,y1,x2,y2){
+  ctx.save();
+  ctx.strokeStyle='rgba(220,200,255,0.95)';
+  ctx.lineWidth=2;
+  ctx.shadowBlur=12;ctx.shadowColor='#a4f';
+  ctx.beginPath();
+  let cx=x1,cy=y1;
+  const steps=8;
+  ctx.moveTo(cx,cy);
+  for(let i=1;i<=steps;i++){
+    const t=i/steps;
+    const nx=x1+(x2-x1)*t+(Math.random()-0.5)*30;
+    const ny=y1+(y2-y1)*t;
+    ctx.lineTo(nx,ny);
+    cx=nx;cy=ny;
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════
+   MUTATION — each plant can accumulate ALL mutations (array)
+═══════════════════════════════════════ */
+function applyMutation(plant, mutName){
+  if(!plant.muts)plant.muts=[];
+  if(!plant.muts.includes(mutName))plant.muts.push(mutName);
+}
+
 function tryMutate(){
+  // Only mutate during active weather phase, not during clear downtime
+  if(!G.wxActive||!G.weather.mut)return;
   if(Math.random()>0.1)return;
   const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
-  const plot=alive[Math.floor(Math.random()*alive.length)];
-  if(!G.weather.mut)return;
-  plot.plant.mut=G.weather.mut;
-  notify('✨ '+(G.weather.mut.charAt(0).toUpperCase()+G.weather.mut.slice(1))+' mutation! ('+G.weather.emoji+')');
+  const plotIdx=Math.floor(Math.random()*alive.length);
+  const plot=alive[plotIdx];
+  const mutName=G.weather.mut;
+  applyMutation(plot.plant,mutName);
+
+  // For storm: animate lightning at that plot
+  if(G.weather.id==='storm'){
+    const el=document.getElementById('plots-wrap').children[G.plots.indexOf(plot)];
+    doLightningStrike(el);
+  }
+
+  const cap=mutName.charAt(0).toUpperCase()+mutName.slice(1);
+  notify('✨ '+cap+' mutation! '+G.weather.emoji);
   sfx('mutate');renderPlots();
 }
+
 function tryMoonlit(){
   if(!G.isNight||Math.random()>0.05)return;
   const alive=G.plots.filter(p=>p.plant);if(!alive.length)return;
   const plot=alive[Math.floor(Math.random()*alive.length)];
-  plot.plant.mut='moonlit';notify('🌙 Moonlit! ×5 sell value!');sfx('mutate');renderPlots();
+  applyMutation(plot.plant,'moonlit');
+  notify('🌙 Moonlit! ×5 value!');sfx('mutate');renderPlots();
 }
 
-// ── RENDER ──
+/* ═══════════════════════════════════════
+   RENDER
+═══════════════════════════════════════ */
 function renderAll(){renderMoney();renderSeedShop();renderSellShop();renderBar();renderPlots();renderInvModal();}
 function renderMoney(){document.getElementById('money-val').textContent=G.money.toLocaleString();}
 
@@ -529,28 +834,53 @@ function renderSellShop(){
   const body=document.getElementById('sell-body');body.innerHTML='';
   G.inv.filter(i=>i.type==='crop').sort((a,b)=>(a.val||0)-(b.val||0)).forEach(item=>{
     const idx=G.inv.indexOf(item);
+    const muts=item.muts&&item.muts.length?item.muts.map(m=>MUT_DATA[m]?MUT_DATA[m].icon:'').join(''):'';
     const row=document.createElement('div');row.className='sell-row';
-    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name} ×${item.qty}</div><div class="srv">$${item.val}${item.mut?' ['+item.mut+']':''}</div></span>`;
+    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name}${muts?' '+muts:''} ×${item.qty}</div><div class="srv">$${item.val}</div></span>`;
     if(!item.fav)row.onclick=()=>sellOne(idx);
     body.appendChild(row);
   });
+}
+
+// Build a CSS box-shadow from mutation list
+function mutGlowStyle(muts){
+  if(!muts||!muts.length)return'';
+  const shadows=muts.filter(m=>MUT_DATA[m]).map(m=>`inset 0 0 8px ${MUT_DATA[m].glow}`);
+  return shadows.join(', ');
 }
 
 function renderPlots(){
   const wrap=document.getElementById('plots-wrap');wrap.innerHTML='';
   G.plots.forEach((plot,idx)=>{
     const div=document.createElement('div');div.className='plot';
+
     if(plot.plant){
       const p=plot.plant,sd=SEEDS.find(s=>s.id===p.seedId);
       const prog=Math.min(1,p.prog),done=p.done||prog>=1;
       if(done)div.classList.add('ready');
       if(p.fav)div.classList.add('fav-plot');
-      if(p.mut)div.classList.add('mut-'+p.mut);
-      // Icon: colored growing sprout vs grayscale done crop
+
+      // Apply stacked mutation glows via inline style
+      const glow=mutGlowStyle(p.muts);
+      if(glow)div.style.boxShadow=glow;
+
+      // Icon: growing sprout (colored), done crop (also colored)
       const ico=done?sd.icon:sd.seedIcon;
-      const col=done?'done-crop':'growing';
       const sz='sz-'+p.size;
-      div.innerHTML=`<div class="plant-wrap">${p.fav?'<span class="p-heart">♥</span>':''}<span class="p-icon ${sz} ${col}">${ico}</span><span class="p-name" style="color:${done?'#afa':'#666'}">${sd.name.slice(0,7)}</span>${!done?`<div class="p-bar-bg"><div class="p-bar" style="width:${(prog*100).toFixed(0)}%"></div></div>`:''}</div>`;
+
+      // Mutation icons at bottom
+      const mutIcons=(p.muts||[]).filter(m=>MUT_DATA[m]).map(m=>`<span class="p-mut-icon" title="${MUT_DATA[m].label} ×${MUT_DATA[m].mult}">${MUT_DATA[m].icon}</span>`).join('');
+
+      div.innerHTML=`<div class="plant-wrap">
+        ${p.fav?'<span class="p-heart">♥</span>':''}
+        <div class="p-main">
+          <span class="p-icon ${sz} ${done?'done-crop':'growing'}">${ico}</span>
+          <span class="p-name" style="color:${done?'#afa':'#666'}">${sd.name.slice(0,7)}${p.regrow?'↺':''}</span>
+          ${!done?`<div class="p-bar-bg"><div class="p-bar" style="width:${(prog*100).toFixed(0)}%"></div></div>`:''}
+        </div>
+        ${mutIcons?`<div class="p-muts">${mutIcons}</div>`:'<div class="p-muts"></div>'}
+      </div>`;
+
       div.addEventListener('mouseenter',e=>showTT(e,p,sd));
       div.addEventListener('mouseleave',hideTT);
       div.onclick=()=>{if(G.favMode)toggleFavPlot(idx);else if(done)harvestPlot(idx);};
@@ -564,11 +894,16 @@ function renderPlots(){
 function renderBar(){
   const bar=document.getElementById('bottom-bar');bar.innerHTML='';
   G.bar.forEach((ref,si)=>{
-    const item=ref!==null?G.inv[ref]:null;
+    // Guard: if ref points to a non-existent inv item, treat as empty
+    const item=(ref!==null && G.inv[ref])?G.inv[ref]:null;
+    if(ref!==null && !G.inv[ref]){ G.bar[si]=null; } // auto-fix stale ref
     const div=document.createElement('div');
     div.className='b-slot'+(item?'':' empty')+(G.selSlot===si?' sel':'');
-    if(item)div.innerHTML=`<span class="b-si">${item.icon}</span><span class="b-sn">${item.name}</span><span class="b-sq">×${item.qty}</span>`;
-    else div.innerHTML=`<span class="b-snum">${si+1}</span>`;
+    if(item){
+      div.innerHTML=`<span class="b-si">${item.icon}</span><span class="b-sn">${item.name}</span><span class="b-sq">×${item.qty}</span>`;
+    } else {
+      div.innerHTML=`<span class="b-snum">${si+1}</span>`;
+    }
     div.onclick=()=>{if(!item)return;G.selSlot=G.selSlot===si?null:si;updateCursor();renderBar();};
     bar.appendChild(div);
   });
@@ -584,42 +919,72 @@ function renderInvModal(){
   items.forEach(item=>{
     const idx=G.inv.indexOf(item);
     const div=document.createElement('div');div.className='ig'+(item.fav?' faved':'');
-    div.innerHTML=`${item.fav?'<span class="ig-f">♥</span>':''}<span class="ig-i">${item.icon}</span><span class="ig-n">${item.name}</span><span class="ig-q">×${item.qty}</span>${item.val?`<span class="ig-v">$${item.val}</span>`:''}`;
+    const muts=item.muts&&item.muts.length?item.muts.map(m=>MUT_DATA[m]?MUT_DATA[m].icon:'').join(''):'';
+    div.innerHTML=`${item.fav?'<span class="ig-f">♥</span>':''}<span class="ig-i">${item.icon}</span><span class="ig-n">${item.name}${muts?' '+muts:''}</span><span class="ig-q">×${item.qty}</span>${item.val?`<span class="ig-v">$${item.val}</span>`:''}`;
     div.onclick=()=>{if(item.type==='crop'){item.fav=!item.fav;renderInvModal();renderSellShop();save();}};
     div.addEventListener('contextmenu',e=>{e.preventDefault();if(item.type==='seed'){const e2=G.bar.findIndex(b=>b===null);if(e2>=0&&!G.bar.includes(idx)){G.bar[e2]=idx;renderBar();}}});
     grid.appendChild(div);
   });
 }
 
-// ── TOOLTIP (only visible while mouse is over plot) ──
+/* ═══════════════════════════════════════
+   TOOLTIP
+   Format:
+   Name (favorited if faved)
+   Size: Big (+50%)
+   🔥 Scorched ×25  💧 Hydrated ×2  ... (each mut on its own line)
+   Value: $XXX (base: $YYY)
+   Xsec left / Ready!
+═══════════════════════════════════════ */
 let ttOn=false;
 function showTT(e,plant,sd){
   const tt=document.getElementById('tt');
   const sz=SIZES.find(s=>s.id===plant.size);
   const pct=Math.round((sz.mult-1)*100);
-  let m=sz.mult*(G.weather.wm||1);
-  if(plant.mut==='moonlit')m*=5;
-  const val=Math.round(sd.base*m);
-  const tl=plant.done?'Ready!':Math.round((1-plant.prog)*sd.grow)+'s left';
-  tt.innerHTML=`<div class="tt-n">${sd.name}</div><div class="tt-s">Size: ${sz.label} (${pct>=0?'+':''}${pct}%)</div>${plant.mut?`<div class="tt-m">✨ ${plant.mut}</div>`:''}<div class="tt-v">Value: $${val}</div><div class="tt-t">${tl}</div>`;
+  const{val,base}=calcVal(plant);
+  const tl=plant.done?'Ready!':Math.round((1-plant.prog)*plant.growTime)+'s left';
+
+  let mutsHtml='';
+  (plant.muts||[]).forEach(mut=>{
+    const md=MUT_DATA[mut];
+    if(md)mutsHtml+=`<div class="tt-m" style="color:${md.glow.replace('0.55','1')}">${md.icon} ${md.label} ×${md.mult}</div>`;
+  });
+
+  const favLine=plant.fav?'<div class="tt-fav">♥ Favorited</div>':'';
+  tt.innerHTML=`<div class="tt-n">${sd.name}${plant.fav?' (favorited)':''}</div>
+    ${favLine}
+    <div class="tt-s">Size: ${sz.label} (${pct>=0?'+':''}${pct}%)</div>
+    ${mutsHtml}
+    <div class="tt-v">Value: $${val.toLocaleString()}</div>
+    <div class="tt-base">Base: $${base}</div>
+    <div class="tt-t">${tl}${plant.regrow?' ↺ regrow':''}</div>`;
   tt.classList.add('show');ttOn=true;moveTT(e);
 }
 function hideTT(){document.getElementById('tt').classList.remove('show');ttOn=false;}
 function moveTT(e){const tt=document.getElementById('tt');tt.style.left=(e.clientX+18)+'px';tt.style.top=(e.clientY+6)+'px';}
 document.addEventListener('mousemove',e=>{if(ttOn)moveTT(e);});
 
-// ── CURSOR ──
+/* ═══════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════ */
 let mx=0,my=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
 function updateCursor(){
   const c=document.getElementById('cursor'),l=document.getElementById('cursor-label');
-  if(G.selSlot!==null){const ref=G.bar[G.selSlot];if(ref!==null&&G.inv[ref]){l.textContent=G.inv[ref].icon;c.classList.add('has-seed');return;}}
+  if(G.selSlot!==null){
+    const ref=G.bar[G.selSlot];
+    if(ref!==null&&G.inv[ref]){l.textContent=G.inv[ref].icon;c.classList.add('has-seed');return;}
+  }
   l.textContent='';c.classList.remove('has-seed');
 }
 
-// ── DAY/NIGHT ──
+/* ═══════════════════════════════════════
+   DAY / NIGHT  (30 real-seconds each)
+═══════════════════════════════════════ */
 function tickDN(dt){
-  G.tod=(G.tod+dt/60)%1;
+  // 30 real minutes per full day = 1800s. Half day = 900s.
+  // tod advances by dt/1800 per second → full cycle in 1800s
+  G.tod=(G.tod+dt/1800)%1;
   const was=G.isNight;G.isNight=G.tod>=0.5;
   const h=Math.floor(G.tod*24),m=Math.floor((G.tod*24%1)*60);
   document.getElementById('time-lbl').textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
@@ -628,32 +993,125 @@ function tickDN(dt){
   else if(!G.isNight&&was){document.body.classList.remove('night');G.day++;switchMusic('main');}
 }
 
-// ── NOTIFY ──
+/* ═══════════════════════════════════════
+   NOTIFY
+═══════════════════════════════════════ */
 function notify(msg){
   const c=document.getElementById('notifs'),d=document.createElement('div');
   d.className='notif';d.textContent=msg;c.appendChild(d);
   setTimeout(()=>d.remove(),3200);
 }
 
-// ── MAIN LOOP ──
-let lastT=performance.now(),mutT=0,shopT=0,wxT=0;
+/* ═══════════════════════════════════════
+   MAIN LOOP
+═══════════════════════════════════════ */
+let lastT=performance.now(),shopT=0;
+// Weather state machine timers
+let wxPhaseTimer=0;   // counts within current phase
+const WX_ACTIVE_DUR=300;  // 5 min active
+const WX_CLEAR_DUR =300;  // 5 min clear
+const WX_CYCLE=600;       // 10 min total cycle
+
+function tickWeather(dt){
+  wxPhaseTimer+=dt;
+
+  if(G.wxActive){
+    // Active phase
+    const rem=Math.max(0,WX_ACTIVE_DUR-wxPhaseTimer);
+    document.getElementById('wx-timer').textContent='Active '+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+    if(wxPhaseTimer>=WX_ACTIVE_DUR){
+      // Switch to clear downtime
+      wxPhaseTimer=0;
+      G.wxActive=false;
+      G.weather=WEATHERS[0]; // clear
+      document.getElementById('wx-name').textContent='☀ Clear (downtime)';
+      parts=[];
+    }
+    // Lightning for storm: random strikes
+    if(G.weather.id==='storm'&&G.partOn){
+      lightningTimer+=dt;
+      if(lightningTimer>=nextLightningTime){
+        lightningTimer=0;nextLightningTime=2+Math.random()*5;
+        doLightningStrike(null); // random on-screen
+      }
+    }
+  } else {
+    // Clear downtime
+    const rem=Math.max(0,WX_CLEAR_DUR-wxPhaseTimer);
+    document.getElementById('wx-timer').textContent='Next '+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+    if(wxPhaseTimer>=WX_CLEAR_DUR){
+      // Pick new weather
+      wxPhaseTimer=0;
+      const choices=WEATHERS.filter(w=>w.id!=='clear');
+      const w=choices[Math.floor(Math.random()*choices.length)];
+      G.weather=w;G.wxActive=true;
+      setWeather(w,true);
+      notify(w.emoji+' '+w.name+' weather!');
+    }
+  }
+}
+
+function tickMutation(dt){
+  if(!G.wxActive||!G.weather.mut)return;
+  G.mutTimer+=dt;
+  if(G.mutTimer>=10){G.mutTimer=0;tryMutate();}
+}
+
 function loop(now){
   const dt=Math.min((now-lastT)/1000,0.5);lastT=now;
-  G.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog+=dt/p.plant.growTime;if(p.plant.prog>=1){p.plant.prog=1;p.plant.done=true;}}});
-  wxT+=dt;if(wxT>=G.weatherNext){wxT=0;G.weatherNext=280+Math.random()*60;if(Math.random()<0.1){const w=WEATHERS[Math.floor(Math.random()*WEATHERS.length)];if(w.id!==G.weather.id){setWeather(w);notify(w.emoji+' Weather: '+w.name);}}}
-  mutT+=dt;if(mutT>=10){mutT=0;if(G.weather.mut)tryMutate();tryMoonlit();}
-  shopT+=dt;if(shopT>=300){shopT=0;restock();}
+
+  // Grow
+  G.plots.forEach(p=>{
+    if(p.plant&&!p.plant.done){
+      p.plant.prog+=dt/p.plant.growTime;
+      if(p.plant.prog>=1){p.plant.prog=1;p.plant.done=true;}
+    }
+  });
+
+  tickWeather(dt);
+  tickMutation(dt);
+
+  // Night moonlit mutation
+  if(G.isNight){
+    G.mutTimer+=0; // already handled above; night runs separately
+    // small timer reuse for moonlit
+  }
+  // Moonlit uses its own cadence (~10s via separate check)
+  if(Math.floor(now/10000)!==Math.floor((now-dt*1000)/10000)){
+    tryMoonlit();
+  }
+
+  // Shop restock
+  shopT+=dt;
+  if(shopT>=300){shopT=0;restock();}
   const rem=Math.max(0,300-shopT);
   document.getElementById('restock-time').textContent=Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
-  tickDN(dt);tickParts();drawParts();
+
+  tickDN(dt);
+  tickParts();drawParts();
+
+  // Auto-save every 30s
   if(Math.floor(now/30000)!==Math.floor((now-dt*1000)/30000)){G._ts=Date.now();save();}
+
+  // Cursor
   const c=document.getElementById('cursor'),l=document.getElementById('cursor-label');
   c.style.left=mx+'px';c.style.top=my+'px';l.style.left=mx+'px';l.style.top=my+'px';
-  if(Math.floor(now/500)!==Math.floor((now-dt*1000)/500)){renderPlots();renderBar();renderMoney();}
+
+  // Re-render periodically
+  if(Math.floor(now/500)!==Math.floor((now-dt*1000)/500)){
+    renderPlots();renderBar();renderMoney();
+    // Clean up bar slots where inv item no longer exists
+    let dirty=false;
+    G.bar=G.bar.map(b=>{if(b!==null&&!G.inv[b]){dirty=true;return null;}return b;});
+    if(dirty)renderBar();
+  }
+
   requestAnimationFrame(loop);
 }
 
-// ── EVENTS ──
+/* ═══════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════ */
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.getElementById('inv-open-btn').onclick=()=>{document.getElementById('inv-modal').classList.add('open');renderInvModal();};
 document.getElementById('inv-close').onclick=()=>document.getElementById('inv-modal').classList.remove('open');
@@ -676,16 +1134,29 @@ document.addEventListener('keydown',e=>{
 function resizeCv(){const cv=document.getElementById('weather-canvas');cv.width=window.innerWidth;cv.height=window.innerHeight;}
 window.addEventListener('resize',resizeCv);resizeCv();
 
-// ── INIT ──
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
 function init(){
   load();
   if(!G.shop||!G.shop.length)initShop();
+  // Migrate old mut (string) to muts (array) in plots
+  G.plots.forEach(p=>{
+    if(p.plant&&p.plant.mut!==undefined&&!p.plant.muts){
+      p.plant.muts=p.plant.mut?[p.plant.mut]:[];
+      delete p.plant.mut;
+    }
+  });
+  // Migrate inv
+  G.inv.forEach(i=>{
+    if(i.mut!==undefined&&!i.muts){i.muts=i.mut?[i.mut]:[];delete i.mut;}
+  });
   document.body.classList.toggle('night',G.isNight);
   renderAll();
   document.addEventListener('click',function startMu(){buildAudio();switchMusic(G.isNight?'night':'main');document.removeEventListener('click',startMu);},{once:true});
   lastT=performance.now();requestAnimationFrame(loop);
   notify('🌱 Grow a Garden — buy seeds → plant → harvest!');
-  notify('💡 Keys 1–0 select bar · F = favorite mode · ESC = cancel');
+  notify('💡 Keys 1–0 select bar · F=favorite mode · crops regrow (except Carrot)');
 }
 init();
 </script>
