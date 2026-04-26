@@ -407,8 +407,8 @@ const T = {
   sHuge:   IS_FR ? 'Énorme'    : 'Huge',
   // Tooltip
   ttSize:    IS_FR ? 'Taille : ' : 'Size: ',
-  ttValue:   IS_FR ? 'Valeur : $': 'Value: $',
-  ttBase:    IS_FR ? 'Base : $'  : 'Base: $',
+  ttValue:   IS_FR ? 'Valeur : €': 'Value: $',
+  ttBase:    IS_FR ? 'Base : €'  : 'Base: $',
   ttReady:   IS_FR ? 'Prêt !'    : 'Ready!',
   ttLeft:    IS_FR ? 's restantes': 's left',
   ttRegrow:  IS_FR ? ' ↺ repousse': ' ↺ regrow',
@@ -778,6 +778,7 @@ function sfx(type){
 const TRACKS={
   main:['Grow a Garden Soundtrack - Main Theme.mp3','Grow a Garden Soundtrack - Main Theme 4.mp3'],
   night:['Grow a Garden Soundtrack - Night Theme 1.mp3','Grow a Garden Soundtrack - Night Theme 2.mp3'],
+  bee:['bee event.mp3'],
 };
 let audioEl=null,curTrackType=null,tidxDay=0,tidxNight=0,muSwitch=null;
 function buildAudio(){
@@ -836,7 +837,7 @@ function setWeather(w, active){
     if(w.id==='tornado'){spawnTornado();}
     if(w.id==='bee'){
       beeEventActive=true;bees=[];spawnBees();
-      switchMusic('night'); // uses night track (closest we have to bee ambience without file)
+      switchMusic('bee'); // uses bee track 
       // Update shop header
       document.getElementById('seed-hdr').style.background='#443300';
       document.getElementById('seed-shop-title').textContent=IS_FR?'🌻 BOUTIQUE FLEURS':'🌻 FLOWER SHOP';
