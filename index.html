@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Grow a Garden</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -107,6 +108,8 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 #settings-btn-r:hover { background:#252525; }
 
 /* ── TOP BAR ── */
+.tb-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 8px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; white-space:nowrap; }
+.tb-btn:hover { background:#252525; }
 #fav-btn { background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 10px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; }
 #fav-btn:hover { background:#252525; }
 #fav-btn.on { border-color:#f44; color:#f88; }
@@ -181,6 +184,42 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:#111; }
 ::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+
+/* ── BLOOD MOON ── */
+#bloodmoon-overlay { position:fixed; inset:0; background:rgba(120,0,0,0); pointer-events:none; transition:background 5s ease; z-index:4; }
+body.bloodmoon #bloodmoon-overlay { background:rgba(120,0,0,0.22); }
+body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 700px) {
+  #left-panel, #right-panel { width:0; overflow:hidden; border:none; }
+  #top-bar { left:0; right:0; height:40px; gap:4px; padding:0 6px; overflow-x:auto; }
+  #bottom-bar { left:0; right:0; height:76px; padding:3px 4px; gap:3px; }
+  #map-area { left:0; right:0; top:40px; bottom:76px; }
+  #plots-wrap { inset:4px; gap:3px; }
+  .p-icon.sz-tiny   { font-size:13px; }
+  .p-icon.sz-small  { font-size:16px; }
+  .p-icon.sz-normal { font-size:20px; }
+  .p-icon.sz-big    { font-size:24px; }
+  .p-icon.sz-huge   { font-size:28px; }
+  .p-name { font-size:6px; }
+  .p-mut-icon { font-size:8px; }
+  .b-slot { width:58px; height:58px; }
+  .b-si { font-size:20px; }
+  #mobile-panels { display:flex !important; }
+  .tb-btn { font-size:9px; padding:3px 5px; }
+  #top-info { display:none; }
+}
+@media (max-width: 700px) {
+  /* Mobile panel drawer - bottom sheet */
+  #mobile-panels { position:fixed; bottom:76px; left:0; right:0; z-index:20; display:none; flex-direction:row; gap:0; max-height:220px; }
+  #mobile-left { flex:1; background:#151515; border-top:2px solid #700; overflow-y:auto; display:flex; flex-direction:column; }
+  #mobile-right { flex:1; background:#151515; border-top:2px solid #007; overflow-y:auto; display:flex; flex-direction:column; }
+  #mobile-panel-toggle { display:flex !important; }
+}
+#mobile-panel-toggle { display:none; }
+#mobile-panels { display:none; }
+
 </style>
 </head>
 <body>
@@ -188,6 +227,7 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 <div id="cursor-label"></div>
 <canvas id="weather-canvas"></canvas>
 <div id="night-overlay"></div>
+<div id="bloodmoon-overlay"></div>
 <div id="lightning-flash"></div>
 <div id="tt"></div>
 <div id="notifs"></div>
@@ -217,10 +257,28 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 </div>
 
 <div id="top-bar">
-  <button id="fav-btn">♡ Favorite</button>
-  <button id="move-btn">↕ Move</button>
-  <button id="harvest-all-btn">🌾 Harvest All</button>
-  <span id="top-info">50 plots · click to plant/harvest · F=favorite</span>
+  <button id="fav-btn" class="tb-btn">♡ Fav</button>
+  <button id="move-btn" class="tb-btn">↕ Move</button>
+  <button id="harvest-all-btn" class="tb-btn">🌾 All</button>
+  <button id="mobile-panel-toggle" class="tb-btn" onclick="toggleMobilePanels()" style="display:none">📋</button>
+  <span id="top-info">50 plots · click=plant/harvest · right-click=sell · F=fav · M=move</span>
+</div>
+
+<!-- Mobile panels (shop + sell, shown below top bar on phones) -->
+<div id="mobile-panels">
+  <div id="mobile-left">
+    <div style="padding:3px 5px;font-size:11px;color:#fd4;font-weight:bold">💰 $<span id="money-val-m">0</span></div>
+    <div style="font-size:10px;font-weight:bold;padding:2px 5px;background:#700;color:#fbb">🔴 SELL</div>
+    <div id="sell-body-m" style="flex:1;overflow-y:auto;padding:2px;font-size:9px"></div>
+    <button onclick="sellAll()" style="background:#900;color:#fcc;border:none;padding:3px;font-family:inherit;font-size:9px;cursor:pointer;font-weight:bold">SELL ALL</button>
+  </div>
+  <div id="mobile-right">
+    <div style="font-size:10px;font-weight:bold;padding:2px 5px;background:#007;color:#bbf;display:flex;justify-content:space-between">
+      <span id="seed-shop-title-m">🔵 SEEDS</span>
+      <span id="restock-time-m" style="font-size:8px;color:#88f"></span>
+    </div>
+    <div id="seed-body-m" style="flex:1;overflow-y:auto;padding:2px;font-size:9px"></div>
+  </div>
 </div>
 
 <div id="map-area">
@@ -311,6 +369,7 @@ const T = {
   rRare:      IS_FR ? 'rare'      : 'rare',
   rEpic:      IS_FR ? 'épique'    : 'epic',
   rLegendary: IS_FR ? 'légendaire': 'legendary',
+  rDivine:    IS_FR ? 'divin'     : 'divine',
   // Weather names
   wClear:     IS_FR ? 'Dégagé'    : 'Clear',
   wRain:      IS_FR ? 'Pluie'     : 'Rain',
@@ -319,18 +378,27 @@ const T = {
   wFrost:     IS_FR ? 'Gel'       : 'Frost',
   wHeat:      IS_FR ? 'Canicule'  : 'Heatwave',
   wRainbow:   IS_FR ? 'Arc-en-ciel':'Rainbow',
+  wTornado:   IS_FR ? 'Tornade'   : 'Tornado',
+  wWet:       IS_FR ? 'Mouillé'   : 'Wet',
+  wChilled:   IS_FR ? 'Froid'     : 'Chilled',
+  wBee:       IS_FR ? "Essaim d'abeilles" : 'Bee Swarm',
   // Weather timer labels
   wxActive:   IS_FR ? 'Actif '    : 'Active ',
   wxNext:     IS_FR ? 'Prochain ' : 'Next ',
   wxDowntime: IS_FR ? '☀ Dégagé (accalmie)' : '☀ Clear (downtime)',
   // Mutation labels
   mMoonlit:   IS_FR ? 'Clair de lune' : 'Moonlit',
+  mBloodlit:  IS_FR ? 'Lune de sang'  : 'Bloodlit',
   mRainbow:   IS_FR ? 'Arc-en-ciel'   : 'Rainbow',
   mScorched:  IS_FR ? 'Brûlé'         : 'Scorched',
   mFrosty:    IS_FR ? 'Glacé'         : 'Frosty',
   mStormy:    IS_FR ? 'Orageux'       : 'Stormy',
   mHydrated:  IS_FR ? 'Hydraté'       : 'Hydrated',
   mMisty:     IS_FR ? 'Brumeux'       : 'Misty',
+  mWindstruck:IS_FR ? 'Coup de vent'  : 'Windstruck',
+  mTwisted:   IS_FR ? 'Tordu'         : 'Twisted',
+  mFrozen:    IS_FR ? 'Gelé'          : 'Frozen',
+  mPollinated:IS_FR ? 'Pollinisé'     : 'Pollinated',
   // Size labels
   sTiny:   IS_FR ? 'Minuscule' : 'Tiny',
   sSmall:  IS_FR ? 'Petit'     : 'Small',
@@ -398,28 +466,49 @@ const SIZES=[
 ];
 
 // Rarity color map
-const RARITY_COLOR={common:'#aaa',uncommon:'#4e4',rare:'#55f',epic:'#a4f',legendary:'#fa3'};
+const RARITY_COLOR={common:'#aaa',uncommon:'#4e4',rare:'#55f',epic:'#a4f',legendary:'#fa3',divine:'#fff'};
+
+// FLOWER SEEDS — only available during bee event
+const FLOWERS=[
+  {id:'f_daisy',    name:IS_FR?'Marguerite':'Daisy',    icon:'🌼',seedIcon:'🌸',rarity:'common',   price:500,   grow:120, base:300,  multiHarvest:true,isFlower:true},
+  {id:'f_tulip',    name:IS_FR?'Tulipe':'Tulip',         icon:'🌷',seedIcon:'🌸',rarity:'uncommon', price:2000,  grow:200, base:1200, multiHarvest:true,isFlower:true},
+  {id:'f_rose',     name:IS_FR?'Rose':'Rose',            icon:'🌹',seedIcon:'🌸',rarity:'rare',     price:6000,  grow:300, base:4000, multiHarvest:true,isFlower:true},
+  {id:'f_orchid',   name:IS_FR?'Orchidée':'Orchid',      icon:'🪷',seedIcon:'🌸',rarity:'epic',     price:20000, grow:500, base:15000,multiHarvest:true,isFlower:true},
+  {id:'f_lotus',    name:IS_FR?'Lotus':'Lotus',          icon:'🪷',seedIcon:'🌸',rarity:'legendary',price:60000, grow:900, base:40000,multiHarvest:true,isFlower:true},
+  {id:'f_sunflower',name:IS_FR?'Tournesol':'Sunflower',  icon:'🌻',seedIcon:'🌻',rarity:'divine',   price:100000,grow:3600,base:50000,multiHarvest:true,isFlower:true},
+];
 
 // Weather: active=5min, then clear=5min, total cycle=10min
 const WEATHERS=[
-  {id:'clear',   name:()=>T.wClear,  emoji:'☀', mut:null,       col:null,   glowColor:null    },
-  {id:'rain',    name:()=>T.wRain,   emoji:'🌧',mut:'hydrated',  col:'#4af', glowColor:'#4af'  },
-  {id:'storm',   name:()=>T.wStorm,  emoji:'⛈',mut:'stormy',    col:'#a4f', glowColor:'#a4f'  },
-  {id:'fog',     name:()=>T.wFog,    emoji:'🌫',mut:'misty',     col:'#aaa', glowColor:'#aaa'  },
-  {id:'frost',   name:()=>T.wFrost,  emoji:'❄', mut:'frosty',   col:'#4ff', glowColor:'#4ff'  },
-  {id:'heatwave',name:()=>T.wHeat,   emoji:'🔥',mut:'scorched',  col:'#f84', glowColor:'#f84'  },
-  {id:'rainbow', name:()=>T.wRainbow,emoji:'🌈',mut:'rainbow',   col:'#f4a', glowColor:'#f4a'  },
+  {id:'clear',   name:()=>T.wClear,  emoji:'☀', mut:null,        col:null   },
+  {id:'rain',    name:()=>T.wRain,   emoji:'🌧',mut:'hydrated',  col:'#4af' },
+  {id:'storm',   name:()=>T.wStorm,  emoji:'⛈',mut:'stormy',    col:'#a4f' },
+  {id:'fog',     name:()=>T.wFog,    emoji:'🌫',mut:'misty',     col:'#aaa' },
+  {id:'frost',   name:()=>T.wFrost,  emoji:'❄', mut:'frosty',   col:'#4ff' },
+  {id:'heatwave',name:()=>T.wHeat,   emoji:'🔥',mut:'scorched',  col:'#f84' },
+  {id:'rainbow', name:()=>T.wRainbow,emoji:'🌈',mut:'rainbow',   col:'#f4a' },
+  {id:'tornado', name:()=>T.wTornado,emoji:'🌪',mut:'windstruck',col:'#8df' },
+  {id:'wet',     name:()=>T.wWet,    emoji:'💦',mut:'wet',       col:'#36f' },
+  {id:'chilled', name:()=>T.wChilled,emoji:'🧊',mut:'chilled',   col:'#0ef' },
+  {id:'bee',     name:()=>T.wBee,    emoji:'🐝',mut:'pollinated',col:'#fd4' },
 ];
 
 // Mutation info: icon + multiplier + glow
 const MUT_DATA={
-  moonlit:  {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)',  label:()=>T.mMoonlit },
-  rainbow:  {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)', label:()=>T.mRainbow },
-  scorched: {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)',  label:()=>T.mScorched},
-  frosty:   {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)',  label:()=>T.mFrosty  },
-  stormy:   {icon:'⚡',mult:100, glow:'rgba(170,50,255,0.55)', label:()=>T.mStormy  },
-  hydrated: {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated},
-  misty:    {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty   },
+  moonlit:    {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)',  label:()=>T.mMoonlit   },
+  bloodlit:   {icon:'🩸',mult:25,  glow:'rgba(180,0,0,0.65)',    label:()=>T.mBloodlit  },
+  rainbow:    {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)', label:()=>T.mRainbow   },
+  scorched:   {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)',  label:()=>T.mScorched  },
+  frosty:     {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)',  label:()=>T.mFrosty    },
+  stormy:     {icon:'⚡',mult:100, glow:'rgba(170,50,255,0.55)', label:()=>T.mStormy    },
+  hydrated:   {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated  },
+  misty:      {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty     },
+  windstruck: {icon:'🌪',mult:3.5, glow:'rgba(150,230,255,0.55)',label:()=>T.mWindstruck},
+  twisted:    {icon:'🌀',mult:30,  glow:'rgba(100,200,255,0.65)',label:()=>T.mTwisted   },
+  wet:        {icon:'💦',mult:1.8, glow:'rgba(30,100,255,0.5)',  label:()=>T.wWet       },
+  chilled:    {icon:'🧊',mult:1.8, glow:'rgba(0,200,230,0.5)',   label:()=>T.wChilled   },
+  frozen:     {icon:'🧊',mult:25,  glow:'rgba(0,240,255,0.65)',  label:()=>T.mFrozen    },
+  pollinated: {icon:'🐝',mult:2,   glow:'rgba(255,220,0,0.55)',  label:()=>T.mPollinated},
 };
 
 /* ═══════════════════════════════════════
@@ -432,20 +521,90 @@ let G={
   wxDuration:0,
   wxCycleNext:600,
   mutTimer:0,
+  bloodMoonDay:0, // which day the next blood moon falls on (set at init)
   shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
   inv:[], bar:Array(10).fill(null), selSlot:null,
   favMode:false, moveMode:false, moveSrc:null,
   musicOn:true, sfxOn:true, partOn:true,
 };
 
+// Runtime-only state (not saved)
+let tornadoX=0,tornadoY=0,tornadoVx=0,tornadoVy=0,tornadoActive=false;
+let bees=[],beeEventActive=false,beeShopHidden=false,beeShopHideTimer=0;
+let isBloodMoon=false;
+
 const SAVE_KEY='gar';
 
-/* sell plant on plot for base value (no mutations bonus) */
+/* ═══════════════════════════════════════
+   SANITIZE — clean corrupt save data
+═══════════════════════════════════════ */
+function sanitize(s){
+  try{
+    // Ensure arrays
+    if(!Array.isArray(s.plots)||s.plots.length!==50) s.plots=Array(50).fill(null).map(()=>({plant:null}));
+    if(!Array.isArray(s.inv))s.inv=[];
+    if(!Array.isArray(s.bar)||s.bar.length!==10)s.bar=Array(10).fill(null);
+    if(!Array.isArray(s.shop))s.shop=[];
+    // Sanitize plots
+    const validSeedIds=new Set([...SEEDS,...FLOWERS].map(x=>x.id));
+    const validMuts=new Set(Object.keys(MUT_DATA));
+    const validSizes=new Set(SIZES.map(x=>x.id));
+    s.plots=s.plots.map(p=>{
+      if(!p||typeof p!=='object')return{plant:null};
+      if(!p.plant)return{plant:null};
+      const pl=p.plant;
+      if(!validSeedIds.has(pl.seedId)){return{plant:null};}
+      pl.prog=Math.min(1,Math.max(0,Number(pl.prog)||0));
+      pl.growTime=Math.max(1,Number(pl.growTime)||60);
+      pl.done=!!pl.done;
+      pl.fav=!!pl.fav;
+      pl.regrow=!!pl.regrow;
+      pl.muts=Array.isArray(pl.muts)?pl.muts.filter(m=>validMuts.has(m)):[];
+      // Migrate old single mut field
+      if(pl.mut&&!pl.muts.length){pl.muts=[pl.mut];delete pl.mut;}
+      if(!validSizes.has(pl.size))pl.size='normal';
+      return{plant:pl};
+    });
+    // Sanitize inventory
+    s.inv=s.inv.filter(i=>{
+      if(!i||typeof i!=='object')return false;
+      if(i.type==='seed'&&!validSeedIds.has(i.seedId))return false;
+      if(i.type==='crop'&&!validSeedIds.has(i.seedId))return false;
+      if(!i.type)return false;
+      i.qty=Math.max(1,Math.round(Number(i.qty)||1));
+      i.muts=Array.isArray(i.muts)?i.muts.filter(m=>validMuts.has(m)):[];
+      if(i.mut&&!i.muts.length){i.muts=[i.mut];delete i.mut;}
+      return true;
+    });
+    // Sanitize bar — ensure refs are valid inv indices or null
+    s.bar=s.bar.map(b=>{if(b===null||b===undefined)return null;const n=Number(b);if(!isFinite(n)||n<0||n>=s.inv.length)return null;return n;});
+    // Sanitize money/day
+    s.money=Math.max(0,Number(s.money)||50);
+    s.day=Math.max(1,Math.round(Number(s.day)||1));
+    s.tod=Math.min(1,Math.max(0,Number(s.tod)||0));
+    // Blood moon scheduling
+    if(!s.bloodMoonDay||s.bloodMoonDay<=s.day)s.bloodMoonDay=s.day+5-((s.day-1)%5);
+  }catch(e){console.warn('Sanitize error',e);}
+  return s;
+}
+
+function save(){try{G._ts=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY);if(!r)return;
+    let s=JSON.parse(r);
+    s=sanitize(s);
+    const el=s._ts?Math.floor((Date.now()-s._ts)/1000):0;
+    if(el>0)s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
+    Object.assign(G,s);G._ts=undefined;
+    if(el>0)notify(T.notifBack+' ('+el+'s)');
+  }catch(e){console.warn('Load failed, resetting:',e);localStorage.removeItem(SAVE_KEY);}
+}
 function sellPlot(idx){
   const plot=G.plots[idx];if(!plot.plant)return;
   const p=plot.plant;
   if(p.fav){notify(T.notifUnfav);return;}
-  const sd=SEEDS.find(s=>s.id===p.seedId);
+  const sd=getSeedData(p.seedId);
   G.money+=sd.base;
   notify((IS_FR?'💰 Vendu parcelle : ':'💰 Plot sold: ')+sd.name+' +$'+sd.base);
   plot.plant=null;
@@ -462,46 +621,24 @@ function harvestAll(){
 }
 
 /* move mode: click source then destination */
-function handleMoveClick(idx){
-  const plot=G.plots[idx];
-  if(G.moveSrc===null){
-    // Pick source — must have a plant (favorited ok for move)
-    if(!plot.plant){notify(IS_FR?'❌ Pas de plante ici':'❌ No plant here');return;}
-    G.moveSrc=idx;
-    notify(IS_FR?'↕ Cliquez la destination':'↕ Click destination plot');
-    renderPlots();
-  } else {
-    if(G.moveSrc===idx){G.moveSrc=null;renderPlots();return;}
-    // Swap plants between moveSrc and idx
-    const tmp=G.plots[G.moveSrc].plant;
-    G.plots[G.moveSrc].plant=plot.plant;
-    plot.plant=tmp;
-    G.moveSrc=null;
-    renderPlots();save();
-  }
-}
-function save(){try{G._ts=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
-function load(){
-  try{
-    const r=localStorage.getItem(SAVE_KEY);if(!r)return;
-    const s=JSON.parse(r);
-    const el=s._ts?Math.floor((Date.now()-s._ts)/1000):0;
-    if(s.plots&&el>0)s.plots.forEach(p=>{if(p.plant&&!p.plant.done){p.plant.prog=Math.min(1,p.plant.prog+el/p.plant.growTime);if(p.plant.prog>=1)p.plant.done=true;}});
-    Object.assign(G,s);G._ts=undefined;
-    if(el>0)notify(T.notifBack+' ('+el+'s)');
-  }catch(e){}
-}
 
 /* ═══════════════════════════════════════
    SHOP
 ═══════════════════════════════════════ */
-function initShop(){G.shop=SEEDS.map(s=>({id:s.id,qty:1,extra:0}));}
+function allSeedList(){return beeEventActive?FLOWERS:SEEDS;}
+function getSeedData(id){return[...SEEDS,...FLOWERS].find(s=>s.id===id);}
+
+function initShop(){
+  G.shop=[...SEEDS,...FLOWERS].map(s=>({id:s.id,qty:1,extra:0}));
+}
 function restock(){
-  G.shop.forEach(item=>{
-    item.qty=1;
-    const sd=SEEDS.find(s=>s.id===item.id);
-    const c={common:0.6,uncommon:0.35,rare:0.2,epic:0.1,legendary:0.04}[sd.rarity]||0.1;
-    item.extra=Math.random()<c?1+Math.floor(Math.random()*4):0;
+  const list=allSeedList();
+  list.forEach(sd=>{
+    let si=G.shop.find(s=>s.id===sd.id);
+    if(!si){si={id:sd.id,qty:1,extra:0};G.shop.push(si);}
+    si.qty=1;
+    const c={common:0.6,uncommon:0.35,rare:0.2,epic:0.1,legendary:0.04,divine:0.01}[sd.rarity]||0.1;
+    si.extra=Math.random()<c?1+Math.floor(Math.random()*4):0;
   });
   notify(T.notifRestock);sfx('restock');renderSeedShop();
 }
@@ -525,8 +662,8 @@ function seedInvIdx(sid){return G.inv.findIndex(x=>x.type==='seed'&&x.seedId===s
    CALC VALUE
 ═══════════════════════════════════════ */
 function calcVal(plant){
-  const sd=SEEDS.find(s=>s.id===plant.seedId);
-  const sz=SIZES.find(s=>s.id===plant.size);
+  const sd=getSeedData(plant.seedId)||{base:1};
+  const sz=SIZES.find(s=>s.id===plant.size)||SIZES[2];
   let m=sz.mult;
   (plant.muts||[]).forEach(mut=>{
     if(MUT_DATA[mut])m*=MUT_DATA[mut].mult;
@@ -542,7 +679,7 @@ function plantPlot(idx){
   const ref=G.bar[G.selSlot];if(ref===null)return;
   const item=G.inv[ref];if(!item||item.type!=='seed')return;
   if(G.plots[idx].plant)return;
-  const sd=SEEDS.find(s=>s.id===item.seedId);
+  const sd=getSeedData(item.seedId);
   G.plots[idx].plant={
     seedId:item.seedId, prog:0, growTime:sd.grow,
     done:false, muts:[], size:SIZES[Math.floor(Math.random()*SIZES.length)].id,
@@ -562,7 +699,7 @@ function harvestPlot(idx){
   const plot=G.plots[idx];if(!plot.plant||!plot.plant.done)return;
   const p=plot.plant;
   if(p.fav){notify(T.notifUnfav);return;}
-  const sd=SEEDS.find(s=>s.id===p.seedId);
+  const sd=getSeedData(p.seedId);
   const{val}=calcVal(p);
   addInv({type:'crop',seedId:p.seedId,icon:sd.icon,name:sd.name,val,muts:p.muts,size:p.size,fav:false});
 
@@ -604,7 +741,7 @@ function sellOne(idx){
    BUY
 ═══════════════════════════════════════ */
 function buySeed(sid){
-  const sd=SEEDS.find(s=>s.id===sid);if(!sd)return;
+  const sd=getSeedData(sid);if(!sd)return;
   if(G.money<sd.price){notify(T.notifNoMoney);return;}
   const si=G.shop.find(s=>s.id===sid);
   if((si.qty+si.extra)<=0){notify(T.notifNoStock);return;}
@@ -688,36 +825,129 @@ let parts=[];
 let lightningTimer=0, nextLightningTime=3+Math.random()*4;
 
 function setWeather(w, active){
-  G.weather=w;
-  G.wxActive=active;
+  G.weather=w;G.wxActive=active;
   document.getElementById('wx-name').textContent=w.emoji+' '+w.name()+(active?'':(IS_FR?' (accalmie)':' (clearing)'));
-  parts=[];
-  lightningTimer=0; nextLightningTime=2+Math.random()*4;
-  if(G.partOn&&active) spawnWeatherParts(w);
+  parts=[];lightningTimer=0;nextLightningTime=2+Math.random()*4;
+  // Reset bee/tornado state on new weather
+  tornadoActive=false;
+  if(!active||w.id!=='bee'){bees=[];}
+  beeShopHidden=false;
+  if(active){
+    if(w.id==='tornado'){spawnTornado();}
+    if(w.id==='bee'){
+      beeEventActive=true;bees=[];spawnBees();
+      switchMusic('night'); // uses night track (closest we have to bee ambience without file)
+      // Update shop header
+      document.getElementById('seed-hdr').style.background='#443300';
+      document.getElementById('seed-shop-title').textContent=IS_FR?'🌻 BOUTIQUE FLEURS':'🌻 FLOWER SHOP';
+      if(document.getElementById('seed-shop-title-m'))document.getElementById('seed-shop-title-m').textContent=IS_FR?'🌻 FLEURS':'🌻 FLOWERS';
+      renderSeedShop();
+    }
+    spawnWeatherParts(w);
+  }
 }
 
 function spawnWeatherParts(w){
   const cv=document.getElementById('weather-canvas');
   const W=cv.width, H=cv.height;
   parts=[];
-  if(w.id==='rain'){
-    for(let i=0;i<130;i++) parts.push({type:'rain',x:Math.random()*W,y:Math.random()*H,vx:-0.8,vy:6+Math.random()*3,len:9+Math.random()*6,a:0.22+Math.random()*0.18,c:'#88ccff'});
+  if(w.id==='rain'||w.id==='wet'){
+    for(let i=0;i<130;i++) parts.push({type:'rain',x:Math.random()*W,y:Math.random()*H,vx:-0.8,vy:6+Math.random()*3,len:9+Math.random()*6,a:0.22+Math.random()*0.18,c:w.id==='wet'?'#4466ff':'#88ccff'});
   } else if(w.id==='storm'){
-    // Heavy angled rain
     for(let i=0;i<160;i++) parts.push({type:'rain',x:Math.random()*W,y:Math.random()*H,vx:-2.5,vy:7+Math.random()*5,len:12+Math.random()*10,a:0.28+Math.random()*0.22,c:'#9999ee'});
   } else if(w.id==='frost'){
-    // Slowly falling snowflakes
     for(let i=0;i<80;i++) parts.push({type:'flake',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.4,vy:0.4+Math.random()*0.7,r:2+Math.random()*3,a:0.6+Math.random()*0.35,c:'#ddeeff',spin:Math.random()*Math.PI*2,dspin:(Math.random()-0.5)*0.04});
+  } else if(w.id==='chilled'){
+    for(let i=0;i<50;i++) parts.push({type:'flake',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:0.3+Math.random()*0.5,r:1.5+Math.random()*2,a:0.4+Math.random()*0.3,c:'#aaeeff',spin:Math.random()*Math.PI*2,dspin:(Math.random()-0.5)*0.03});
   } else if(w.id==='fog'){
     for(let i=0;i<40;i++) parts.push({type:'fog',x:Math.random()*W,y:H*0.15+Math.random()*H*0.75,vx:0.12+Math.random()*0.15,vy:0,r:55+Math.random()*90,a:0.035+Math.random()*0.03,c:'#aabbcc'});
   } else if(w.id==='heatwave'){
-    // Rising orange/yellow shimmer
     for(let i=0;i<70;i++) parts.push({type:'heat',x:Math.random()*W,y:H*0.4+Math.random()*H*0.6,vx:(Math.random()-0.5)*0.5,vy:-(0.6+Math.random()*1.8),r:2+Math.random()*4,a:0.18+Math.random()*0.18,c:Math.random()<0.5?'#ff7722':'#ffaa33',life:1,maxLife:50+Math.random()*70});
   } else if(w.id==='rainbow'){
-    // Multi-color sparkle dots floating up
     const cols=['#ff4444','#ff8800','#ffdd00','#44dd44','#3399ff','#aa44ff','#ff44aa'];
     for(let i=0;i<100;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.7,vy:-0.4-Math.random()*0.7,r:2+Math.random()*2.5,a:0.5+Math.random()*0.45,c:cols[i%cols.length],life:1,maxLife:70+Math.random()*90});
+  } else if(w.id==='tornado'){
+    // Swirling debris
+    for(let i=0;i<50;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*2,vy:-0.5-Math.random(),r:1+Math.random()*2,a:0.3+Math.random()*0.3,c:'#aaccdd',life:1,maxLife:40+Math.random()*40});
+  } else if(w.id==='bee'){
+    // Warm golden shimmer
+    for(let i=0;i<30;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:-0.2-Math.random()*0.3,r:1.5+Math.random()*2,a:0.2+Math.random()*0.3,c:Math.random()<0.5?'#ffdd44':'#ffaa00',life:1,maxLife:80+Math.random()*60});
   }
+}
+
+// TORNADO logic
+function spawnTornado(){
+  const cv=document.getElementById('weather-canvas');
+  tornadoX=cv.width*0.5;tornadoY=cv.height*0.3;
+  const ang=Math.random()*Math.PI*2;
+  tornadoVx=Math.cos(ang)*55;tornadoVy=Math.sin(ang)*28;
+  tornadoActive=true;
+}
+function tickTornado(dt){
+  if(!tornadoActive)return;
+  const cv=document.getElementById('weather-canvas');
+  tornadoX+=tornadoVx*dt;tornadoY+=tornadoVy*dt;
+  if(tornadoX<30||tornadoX>cv.width-30)tornadoVx*=-1;
+  if(tornadoY<30||tornadoY>cv.height*0.8)tornadoVy*=-1;
+  // Check plot collisions
+  const wrap=document.getElementById('plots-wrap');
+  const plots=[...wrap.querySelectorAll('.plot')];
+  plots.forEach((el,idx)=>{
+    const r=el.getBoundingClientRect();
+    const cx=r.left+r.width/2,cy=r.top+r.height/2;
+    if(Math.hypot(tornadoX-cx,tornadoY-cy)<r.width*0.85){
+      const p=G.plots[idx].plant;
+      if(p&&!(p.muts||[]).includes('windstruck')){
+        if(applyMutation(p,'windstruck')){
+          const sd=getSeedData(p.seedId)||{name:'?'};
+          notify('🌪 '+sd.name+' → '+(IS_FR?'Coup de vent ×3.5':'Windstruck ×3.5'));
+          sfx('mutate');renderPlots();
+        }
+      }
+    }
+  });
+}
+
+// BEE logic
+function spawnBees(){
+  const cv=document.getElementById('weather-canvas');
+  bees=[];
+  for(let i=0;i<14;i++) bees.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-0.5)*60,vy:(Math.random()-0.5)*40,targetIdx:-1,timer:Math.random()*3});
+}
+function tickBees(dt){
+  if(!beeEventActive)return;
+  const cv=document.getElementById('weather-canvas');
+  const wrap=document.getElementById('plots-wrap');
+  const plots=[...wrap.querySelectorAll('.plot')];
+  bees.forEach(bee=>{
+    bee.timer-=dt;
+    if(bee.timer<=0){
+      bee.timer=2+Math.random()*4;
+      const planted=G.plots.map((p,i)=>({p,i})).filter(x=>x.p.plant);
+      if(planted.length)bee.targetIdx=planted[Math.floor(Math.random()*planted.length)].i;
+      else{bee.targetIdx=-1;bee.vx=(Math.random()-0.5)*60;bee.vy=(Math.random()-0.5)*40;}
+    }
+    if(bee.targetIdx>=0&&plots[bee.targetIdx]){
+      const r=plots[bee.targetIdx].getBoundingClientRect();
+      const tx=r.left+r.width/2,ty=r.top+r.height/2;
+      const dx=tx-bee.x,dy=ty-bee.y,dist=Math.hypot(dx,dy);
+      if(dist<22){
+        const p=G.plots[bee.targetIdx].plant;
+        if(p&&!(p.muts||[]).includes('pollinated')){
+          if(applyMutation(p,'pollinated')){
+            const sd=getSeedData(p.seedId)||{name:'?'};
+            notify('🐝 '+sd.name+' → '+(IS_FR?'Pollinisé ×2':'Pollinated ×2'));
+            sfx('mutate');renderPlots();
+          }
+        }
+        bee.targetIdx=-1;bee.vx=(Math.random()-0.5)*60;bee.vy=(Math.random()-0.5)*40;
+      } else {bee.vx=dx/dist*80;bee.vy=dy/dist*80;}
+    }
+    bee.x+=bee.vx*dt;bee.y+=bee.vy*dt;
+    const W=cv.width,H=cv.height;
+    if(bee.x<0){bee.x=0;bee.vx=Math.abs(bee.vx);}if(bee.x>W){bee.x=W;bee.vx=-Math.abs(bee.vx);}
+    if(bee.y<0){bee.y=0;bee.vy=Math.abs(bee.vy);}if(bee.y>H){bee.y=H;bee.vy=-Math.abs(bee.vy);}
+  });
 }
 
 function tickParts(){
@@ -852,7 +1082,7 @@ function tryMutate(){
     doLightningStrike(el);
   }
 
-  const sd=SEEDS.find(s=>s.id===plot.plant.seedId);
+  const sd=getSeedData(plot.plant.seedId);
   const md=MUT_DATA[mutName];
   const mutLabel=md?md.label():'?';
   notify('✨ '+sd.name+' → '+mutLabel+' ×'+md.mult+' '+G.weather.emoji);
@@ -861,13 +1091,14 @@ function tryMutate(){
 
 function tryMoonlit(){
   if(!G.isNight||Math.random()>0.05)return;
-  // Only pick plants without moonlit already
-  const eligible=G.plots.filter(p=>p.plant&&!(p.plant.muts||[]).includes('moonlit'));
+  const mutName=isBloodMoon?'bloodlit':'moonlit';
+  const eligible=G.plots.filter(p=>p.plant&&!(p.plant.muts||[]).includes(mutName));
   if(!eligible.length)return;
   const plot=eligible[Math.floor(Math.random()*eligible.length)];
-  applyMutation(plot.plant,'moonlit');
-  const sd=SEEDS.find(s=>s.id===plot.plant.seedId);
-  notify('🌙 '+sd.name+' — '+(IS_FR?'Clair de lune ! ×5 valeur !':'Moonlit! ×5 value!'));
+  applyMutation(plot.plant,mutName);
+  const sd=getSeedData(plot.plant.seedId)||{name:'?'};
+  const md=MUT_DATA[mutName];
+  notify((isBloodMoon?'🩸':'🌙')+' '+sd.name+' → '+md.label()+' ×'+md.mult);
   sfx('mutate');renderPlots();
 }
 
@@ -879,18 +1110,27 @@ function renderMoney(){document.getElementById('money-val').textContent=G.money.
 
 function renderSeedShop(){
   const body=document.getElementById('seed-body');body.innerHTML='';
-  SEEDS.forEach(sd=>{
+  const bodyM=document.getElementById('seed-body-m');if(bodyM)bodyM.innerHTML='';
+  if(beeShopHidden){
+    // Bee event ending soon — hide shop
+    if(body)body.innerHTML=`<div style="padding:8px;color:#888;font-size:10px;text-align:center">${IS_FR?'🐝 Boutique fermée...':'🐝 Shop closing...'}</div>`;
+    return;
+  }
+  const list=allSeedList();
+  list.forEach(sd=>{
     const si=G.shop.find(s=>s.id===sd.id)||{qty:0,extra:0};
-    const row=document.createElement('div');row.className='seed-row';
     const rc='rc-'+sd.rarity;
     const nameColor=RARITY_COLOR[sd.rarity]||'#aaf';
-    row.innerHTML=`<span class="sri">${sd.icon}</span><span style="flex:1;min-width:0">
+    const html=`<div class="seed-row" data-sid="${sd.id}">
+      <span class="sri">${sd.icon}</span><span style="flex:1;min-width:0">
       <div class="srn" style="color:${nameColor}">${sd.name} <span class="rc ${rc}">[${rarityLabel(sd.rarity)}]</span></div>
       <div class="srp">$${sd.price.toLocaleString()}</div>
       <div class="srs">${T.stock}${si.qty+si.extra}</div>
-    </span>`;
-    row.onclick=()=>buySeed(sd.id);
-    body.appendChild(row);
+    </span></div>`;
+    const row=document.createElement('div');row.innerHTML=html;
+    const r=row.firstChild;r.onclick=()=>buySeed(sd.id);
+    body.appendChild(r);
+    if(bodyM){const r2=r.cloneNode(true);r2.onclick=()=>buySeed(sd.id);bodyM.appendChild(r2);}
   });
 }
 
@@ -919,7 +1159,7 @@ function renderPlots(){
     const div=document.createElement('div');div.className='plot';
 
     if(plot.plant){
-      const p=plot.plant,sd=SEEDS.find(s=>s.id===p.seedId);
+      const p=plot.plant,sd=getSeedData(p.seedId);
       const prog=Math.min(1,p.prog),done=p.done||prog>=1;
       if(done)div.classList.add('ready');
       if(p.fav)div.classList.add('fav-plot');
@@ -1057,7 +1297,8 @@ function updateCursor(){
 }
 
 /* ═══════════════════════════════════════
-   DAY / NIGHT  (30 real-seconds each)
+   DAY / NIGHT  (30 real-min each = 1800s)
+   Blood Moon: every 5 days instead of regular night
 ═══════════════════════════════════════ */
 function tickDN(dt){
   G.tod=(G.tod+dt/1800)%1;
@@ -1065,13 +1306,39 @@ function tickDN(dt){
   const h=Math.floor(G.tod*24),m=Math.floor((G.tod*24%1)*60);
   document.getElementById('time-lbl').textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
   const dayEl=document.getElementById('day-lbl');
-  if(G.isNight){
-    dayEl.textContent=(IS_FR?'🌙 Nuit ':'🌙 Night ')+G.day;
-  } else {
-    dayEl.textContent=(IS_FR?'🌞 Jour ':'🌞 Day ')+G.day;
+
+  // Blood moon check: triggers on bloodMoonDay
+  const shouldBloodMoon=(G.bloodMoonDay&&G.day>=G.bloodMoonDay&&G.isNight);
+
+  if(G.isNight&&!was){
+    document.body.classList.add('night');
+    if(shouldBloodMoon){
+      isBloodMoon=true;
+      document.body.classList.add('bloodmoon');
+      if(G.musicOn)switchMusic('night'); // same music as night
+      notify('🩸 '+(IS_FR?'Lune de sang ! Mutation Ensanglantée ×25 !':'Blood Moon! Bloodlit mutation ×25!'));
+    } else {
+      isBloodMoon=false;
+      document.body.classList.remove('bloodmoon');
+      switchMusic('night');
+    }
+  } else if(!G.isNight&&was){
+    document.body.classList.remove('night');
+    document.body.classList.remove('bloodmoon');
+    isBloodMoon=false;
+    G.day++;
+    // Schedule next blood moon
+    if(G.bloodMoonDay&&G.day>G.bloodMoonDay){
+      G.bloodMoonDay=G.day+5-((G.day-1)%5);
+    }
+    switchMusic('main');
   }
-  if(G.isNight&&!was){document.body.classList.add('night');switchMusic('night');}
-  else if(!G.isNight&&was){document.body.classList.remove('night');G.day++;switchMusic('main');}
+
+  const icon=isBloodMoon?'🩸':(G.isNight?'🌙':'🌞');
+  const label=isBloodMoon?(IS_FR?'Lune de sang ':'Blood Moon '):
+               G.isNight?(IS_FR?'Nuit ':'Night '):
+               (IS_FR?'Jour ':'Day ');
+  dayEl.textContent=icon+' '+label+G.day;
 }
 
 /* ═══════════════════════════════════════
@@ -1099,14 +1366,33 @@ function tickWeather(dt){
   if(G.wxActive){
     const rem=Math.max(0,WX_ACTIVE_DUR-wxPhaseTimer);
     document.getElementById('wx-timer').textContent=(IS_FR?'Actif ':'Active ')+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+
+    // Bee event: hide shop 10s before end to prevent bugs
+    if(beeEventActive&&!beeShopHidden&&rem<=10){
+      beeShopHidden=true;
+      renderSeedShop();
+      notify(IS_FR?'🐝 La boutique fleurs ferme bientôt...':'🐝 Flower shop closing soon...');
+    }
+
     if(wxPhaseTimer>=WX_ACTIVE_DUR){
       wxPhaseTimer=0;
       G.wxActive=false;
       G.weather=WEATHERS[0];
       document.getElementById('wx-name').textContent=IS_FR?'☀ Dégagé (accalmie)':'☀ Clear (downtime)';
       parts=[];
+      // Clean up bee event
+      if(beeEventActive){
+        beeEventActive=false;beeShopHidden=false;bees=[];
+        // Restore seed shop header
+        document.getElementById('seed-hdr').style.background='';
+        document.getElementById('seed-shop-title').textContent=IS_FR?T.seedShopHdr:'🔵 SEED SHOP';
+        if(document.getElementById('seed-shop-title-m'))document.getElementById('seed-shop-title-m').textContent=IS_FR?'🔵 GRAINES':'🔵 SEEDS';
+        if(!isBloodMoon)switchMusic(G.isNight?'night':'main');
+        renderSeedShop();
+      }
+      tornadoActive=false;
     }
-    // Lightning for storm: visual only, NO sound
+    // Storm lightning
     if(G.weather.id==='storm'&&G.partOn){
       lightningTimer+=dt;
       if(lightningTimer>=nextLightningTime){
@@ -1114,6 +1400,10 @@ function tickWeather(dt){
         doLightningStrike(null);
       }
     }
+    // Tornado movement
+    if(G.weather.id==='tornado'&&tornadoActive)tickTornado(dt);
+    // Bee movement
+    if(G.weather.id==='bee'&&beeEventActive)tickBees(dt);
   } else {
     const rem=Math.max(0,WX_CLEAR_DUR-wxPhaseTimer);
     document.getElementById('wx-timer').textContent=(IS_FR?'Prochain ':'Next ')+Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
