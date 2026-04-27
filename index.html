@@ -114,7 +114,62 @@ body.compact-nums .money-display:after { content: ''; }
 .seed-row .srp { color:#fd4; font-size:9px; }
 .seed-row .srs { color:#555; font-size:9px; }
 .rc { font-size:8px; }
-.rc-common { color:#888; } .rc-uncommon { color:#4e4; } .rc-rare { color:#55f; } .rc-epic { color:#a4f; } .rc-legendary { color:#fa3; }
+/* ── RARITY COLORS (legend=yellow, divine=orange, prismatic=rainbow) ── */
+.rc-common{color:#888;} .rc-uncommon{color:#4e4;} .rc-rare{color:#55f;} .rc-epic{color:#a4f;}
+.rc-legendary{color:#fd4;} .rc-divine{color:#f80;} .rc-prismatic{background:linear-gradient(90deg,#f44,#fa0,#ff0,#4e4,#44f,#a4f,#f4a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:bold;}
+
+/* ── PLANT NAME — two lines allowed ── */
+.p-name { font-size:7px; color:#aaa; text-align:center; overflow:hidden; max-width:100%; white-space:normal; word-break:break-word; line-height:1.1; font-weight:bold; max-height:18px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+/* ── TOOLTIP — always above cursor ── */
+#tt { position:fixed; background:rgba(10,10,10,0.97); border:1px solid #555; border-radius:5px; padding:7px 11px; font-size:11px; pointer-events:none; z-index:10000; max-width:230px; display:none; line-height:1.5; }
+#tt.show { display:block; }
+.tt-n { font-weight:bold; font-size:12px; }
+.tt-fav { color:#f33; font-size:10px; }
+.tt-s { color:#aaa; font-size:10px; }
+.tt-m { font-size:10px; }
+.tt-total { color:#ff8; font-size:10px; font-style:italic; }
+.tt-v { color:#fd4; font-size:11px; font-weight:bold; }
+.tt-base { color:#888; font-size:9px; }
+.tt-t { color:#666; font-size:10px; }
+
+/* ── MOON SHOP ── */
+#seed-hdr.moon-shop { background:linear-gradient(90deg,#114,#226); color:#adf; }
+#seed-hdr.blood-shop { background:linear-gradient(90deg,#400,#600); color:#faa; }
+
+/* ── MOBILE RESPONSIVE (improved) ── */
+@media (max-width: 700px) {
+  body { cursor:auto; }
+  #cursor, #cursor-label { display:none; }
+  #left-panel, #right-panel { width:0; overflow:hidden; border:none; }
+  #top-bar { left:0; right:0; height:44px; gap:3px; padding:0 4px; flex-wrap:nowrap; overflow-x:auto; }
+  #bottom-bar { left:0; right:0; height:80px; padding:4px 4px; gap:3px; }
+  #map-area { left:0; right:0; top:44px; bottom:80px; }
+  #plots-wrap { inset:3px; gap:2px; }
+  .p-icon.sz-tiny   { font-size:14px; }
+  .p-icon.sz-small  { font-size:17px; }
+  .p-icon.sz-normal { font-size:21px; }
+  .p-icon.sz-big    { font-size:25px; }
+  .p-icon.sz-huge   { font-size:29px; }
+  .p-name { font-size:6px; max-height:14px; }
+  .p-mut-icon { font-size:9px; }
+  .b-slot { width:60px; height:60px; }
+  .b-si { font-size:21px; }
+  .b-sn { font-size:7px; }
+  #mobile-panels { display:flex !important; }
+  .tb-btn { font-size:9px; padding:4px 5px; }
+  #top-info { display:none; }
+  #tt { max-width:200px; font-size:10px; }
+}
+@media (max-width: 700px) {
+  #mobile-panels { position:fixed; bottom:80px; left:0; right:0; z-index:20; display:none; flex-direction:row; gap:0; max-height:240px; }
+  #mobile-left { flex:1; background:#151515; border-top:2px solid #700; overflow-y:auto; display:flex; flex-direction:column; }
+  #mobile-right { flex:1; background:#151515; border-top:2px solid #007; overflow-y:auto; display:flex; flex-direction:column; }
+  #mobile-panel-toggle { display:flex !important; }
+}
+#mobile-panel-toggle { display:none; }
+#mobile-panels { display:none; }
+
 #settings-btn-r { margin:3px 6px 6px; background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 6px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; text-align:left; }
 #settings-btn-r:hover { background:#252525; }
 
@@ -238,7 +293,6 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
 <div id="cursor-label"></div>
 <canvas id="weather-canvas"></canvas>
 <div id="night-overlay"></div>
-<div id="bloodmoon-overlay"></div>
 <div id="bloodmoon-overlay"></div>
 <div id="lightning-flash"></div>
 <div id="tt"></div>
@@ -402,6 +456,7 @@ const T = {
   // Mutation labels
   mMoonlit:   IS_FR ? 'Clair de lune' : 'Moonlit',
   mBloodlit:  IS_FR ? 'Lune de sang'  : 'Bloodlit',
+  mCelestial: IS_FR ? 'Céleste'       : 'Celestial',
   mRainbow:   IS_FR ? 'Arc-en-ciel'   : 'Rainbow',
   mScorched:  IS_FR ? 'Brûlé'         : 'Scorched',
   mFrosty:    IS_FR ? 'Glacé'         : 'Frosty',
@@ -412,6 +467,12 @@ const T = {
   mTwisted:   IS_FR ? 'Tordu'         : 'Twisted',
   mFrozen:    IS_FR ? 'Gelé'          : 'Frozen',
   mPollinated:IS_FR ? 'Pollinisé'     : 'Pollinated',
+  // Rarity
+  rPrismatic: IS_FR ? 'prismatique'   : 'prismatic',
+  // Shop headers
+  moonShopHdr:  IS_FR ? '🌙 BOUTIQUE LUNAIRE'   : '🌙 MOON SHOP',
+  bloodShopHdr: IS_FR ? '🩸 BOUTIQUE SANGLANTE' : '🩸 BLOOD SHOP',
+  flowerShopHdr:IS_FR ? '🌻 BOUTIQUE FLEURS'    : '🌻 FLOWER SHOP',
   // Size labels
   sTiny:   IS_FR ? 'Minuscule' : 'Tiny',
   sSmall:  IS_FR ? 'Petit'     : 'Small',
@@ -442,19 +503,31 @@ const T = {
 
 // Helper: rarity display
 function rarityLabel(r){
-  return {common:T.rCommon,uncommon:T.rUncommon,rare:T.rRare,epic:T.rEpic,legendary:T.rLegendary,divine:IS_FR?'divin':'divine'}[r]||r;
+  return {common:T.rCommon,uncommon:T.rUncommon,rare:T.rRare,epic:T.rEpic,
+          legendary:T.rLegendary,divine:IS_FR?'divin':'divine',prismatic:T.rPrismatic||'prismatic'}[r]||r;
 }
 
-// Compact number formatting
+// Compact number formatting — handles up to Qi (quintillion)
 function fmt(n){
   n=Math.round(n);
   if(!G||!G.compactNums)return n.toLocaleString();
-  if(n>=1e15)return(n/1e15).toFixed(1).replace(/\.0$/,'')+'Q';
-  if(n>=1e12)return(n/1e12).toFixed(1).replace(/\.0$/,'')+'T';
-  if(n>=1e9) return(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
-  if(n>=1e6) return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
-  if(n>=1e3) return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';
+  const abs=Math.abs(n);
+  if(abs>=1e18)return(n/1e18).toFixed(1).replace(/\.0$/,'')+'Qi';
+  if(abs>=1e15)return(n/1e15).toFixed(1).replace(/\.0$/,'')+'Q';
+  if(abs>=1e12)return(n/1e12).toFixed(1).replace(/\.0$/,'')+'T';
+  if(abs>=1e9) return(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  if(abs>=1e6) return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(abs>=1e3) return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';
   return n.toString();
+}
+
+// Format time: if compactNums, show hours/min instead of raw seconds
+function fmtTime(secs){
+  if(!G||!G.compactNums)return Math.round(secs)+T.ttLeft;
+  const s=Math.round(secs);
+  if(s>=3600){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+(m>0?m+'m':'');}
+  if(s>=60){const m=Math.floor(s/60),r=s%60;return m+'m'+(r>0?r+'s':'');}
+  return s+'s';
 }
 
 // Seeds: name has EN key + FR translation
@@ -496,8 +569,8 @@ const SIZES=[
   {id:'huge',  label:()=>T.sHuge,   mult:2   },
 ];
 
-// Rarity color map
-const RARITY_COLOR={common:'#aaa',uncommon:'#4e4',rare:'#55f',epic:'#a4f',legendary:'#fa3',divine:'#fff'};
+// Rarity color map — legendary=yellow, divine=orange, prismatic=special
+const RARITY_COLOR={common:'#aaa',uncommon:'#4e4',rare:'#55f',epic:'#a4f',legendary:'#fd4',divine:'#f80',prismatic:'url(#prism)'};
 
 // FLOWER SEEDS — only available during bee event
 const FLOWERS=[
@@ -507,6 +580,29 @@ const FLOWERS=[
   {id:'f_orchid',   name:IS_FR?'Orchidée':'Orchid',      icon:'🌸',seedIcon:'🌸',rarity:'epic',     price:20000, grow:500, base:15000,multiHarvest:true,isFlower:true},
   {id:'f_lotus',    name:IS_FR?'Lotus':'Lotus',          icon:'🪷',seedIcon:'🌸',rarity:'legendary',price:60000, grow:900, base:40000,multiHarvest:true,isFlower:true},
   {id:'f_sunflower',name:IS_FR?'Tournesol':'Sunflower',  icon:'🌻',seedIcon:'🌻',rarity:'divine',   price:100000,grow:3600,base:50000,multiHarvest:true,isFlower:true},
+  {id:'f_prismatic',name:IS_FR?'Fleur Prismatique':'Prismatic Flower',icon:'🌈',seedIcon:'🌟',rarity:'prismatic',price:500000,grow:7200,base:500000,multiHarvest:true,isFlower:true},
+];
+
+// MOON PLANTS — available during Night (moon shop)
+const MOON_PLANTS=[
+  {id:'m_moongrass', name:IS_FR?'Herbe Lunaire':'Moon Grass',    icon:'🌿',seedIcon:'🌙',rarity:'common',   price:1000,  grow:180, base:800,   multiHarvest:true,isMoon:true},
+  {id:'m_starfruit', name:IS_FR?'Fruit Étoilé':'Star Fruit',     icon:'⭐',seedIcon:'🌙',rarity:'uncommon', price:5000,  grow:300, base:4000,  multiHarvest:true,isMoon:true},
+  {id:'m_moonberry', name:IS_FR?'Baie Lunaire':'Moon Berry',     icon:'🫐',seedIcon:'🌙',rarity:'rare',     price:15000, grow:480, base:15000, multiHarvest:true,isMoon:true},
+  {id:'m_nightbloom',name:IS_FR?'Fleur Nocturne':'Night Bloom',  icon:'🌑',seedIcon:'🌙',rarity:'epic',     price:50000, grow:720, base:60000, multiHarvest:true,isMoon:true},
+  {id:'m_lunaris',   name:IS_FR?'Lunaris':'Lunaris',             icon:'🌕',seedIcon:'🌙',rarity:'legendary',price:150000,grow:1200,base:200000,multiHarvest:true,isMoon:true},
+  {id:'m_celestia',  name:IS_FR?'Célestia':'Celestia',           icon:'✨',seedIcon:'🌟',rarity:'divine',   price:400000,grow:2400,base:300000,multiHarvest:true,isMoon:true},
+  {id:'m_prismos',   name:IS_FR?'Prismos':'Prismos',             icon:'🌠',seedIcon:'🌟',rarity:'prismatic',price:1000000,grow:5400,base:565000,multiHarvest:true,isMoon:true},
+];
+
+// BLOOD PLANTS — available during Blood Moon (strongest)
+const BLOOD_PLANTS=[
+  {id:'b_crimson',   name:IS_FR?'Graine Cramoisie':'Crimson Seed',  icon:'🌺',seedIcon:'🩸',rarity:'common',   price:5000,   grow:300,  base:5000,   multiHarvest:true,isBlood:true},
+  {id:'b_scarlet',   name:IS_FR?'Rose Écarlate':'Scarlet Rose',     icon:'🥀',seedIcon:'🩸',rarity:'uncommon', price:20000,  grow:600,  base:25000,  multiHarvest:true,isBlood:true},
+  {id:'b_bloodvine', name:IS_FR?'Vigne de Sang':'Blood Vine',       icon:'🍷',seedIcon:'🩸',rarity:'rare',     price:80000,  grow:900,  base:100000, multiHarvest:true,isBlood:true},
+  {id:'b_phantom',   name:IS_FR?'Fleur Fantôme':'Phantom Flower',   icon:'👻',seedIcon:'🩸',rarity:'epic',     price:250000, grow:1440, base:400000, multiHarvest:true,isBlood:true},
+  {id:'b_dracula',   name:IS_FR?'Orchidée Dracula':'Dracula Orchid',icon:'🧛',seedIcon:'🩸',rarity:'legendary',price:800000, grow:2160, base:450000,multiHarvest:true,isBlood:true},
+  {id:'b_voidlotus', name:IS_FR?'Lotus du Vide':'Void Lotus',       icon:'🌑',seedIcon:'🩸',rarity:'divine',   price:2000000,grow:3600, base:500000,multiHarvest:true,isBlood:true},
+  {id:'b_vampire',   name:IS_FR?'Reine Vampire':'Vampire Queen',    icon:'🦇',seedIcon:'🩸',rarity:'prismatic',price:5000000,grow:7200, base:1000000,multiHarvest:true,isBlood:true},
 ];
 
 // Weather: active=5min, then clear=5min, total cycle=10min
@@ -524,11 +620,14 @@ const WEATHERS=[
 ];
 
 // Mutation info: icon + multiplier + glow
-// frozen = hydrated + frosty fusion (×25)
-// twisted = windstruck + misty fusion (×30)
+// FUSIONS (keep source mutations, add fusion on top, checked every 30s):
+//   hydrated + frosty  → frozen    ×25
+//   windstruck + misty → twisted   ×30
+//   moonlit + bloodlit → celestial ×300
 const MUT_DATA={
   moonlit:    {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)',  label:()=>T.mMoonlit   },
   bloodlit:   {icon:'🩸',mult:25,  glow:'rgba(180,0,0,0.65)',    label:()=>T.mBloodlit  },
+  celestial:  {icon:'⭐',mult:300, glow:'rgba(200,160,255,0.75)',label:()=>T.mCelestial, fusion:true},
   rainbow:    {icon:'🌈',mult:50,  glow:'rgba(255,80,200,0.55)', label:()=>T.mRainbow   },
   scorched:   {icon:'🔥',mult:25,  glow:'rgba(255,130,0,0.55)',  label:()=>T.mScorched  },
   frosty:     {icon:'❄', mult:2,   glow:'rgba(0,220,255,0.55)',  label:()=>T.mFrosty    },
@@ -536,7 +635,7 @@ const MUT_DATA={
   hydrated:   {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated  },
   misty:      {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty     },
   windstruck: {icon:'🌪',mult:3.5, glow:'rgba(150,230,255,0.55)',label:()=>T.mWindstruck},
-  // FUSION mutations (cannot be applied directly by weather — only via fusion)
+  // FUSION mutations (added on top of source mutations, source kept)
   frozen:     {icon:'🧊',mult:25,  glow:'rgba(0,240,255,0.7)',   label:()=>T.mFrozen,   fusion:true},
   twisted:    {icon:'🌀',mult:30,  glow:'rgba(100,200,255,0.7)', label:()=>T.mTwisted,  fusion:true},
   pollinated: {icon:'🐝',mult:2,   glow:'rgba(255,220,0,0.55)',  label:()=>T.mPollinated},
@@ -564,6 +663,8 @@ let G={
 let tornadoX=0,tornadoY=0,tornadoVx=0,tornadoVy=0,tornadoActive=false;
 let bees=[],beeEventActive=false,beeShopHidden=false,beeShopHideTimer=0;
 let isBloodMoon=false;
+let moonShopActive=false, bloodShopActive=false;
+let fusionCheckTimer=0; // check fusions every 30s
 
 const SAVE_KEY='gar';
 
@@ -578,7 +679,7 @@ function sanitize(s){
     if(!Array.isArray(s.bar)||s.bar.length!==10)s.bar=Array(10).fill(null);
     if(!Array.isArray(s.shop))s.shop=[];
     // Sanitize plots
-    const validSeedIds=new Set([...SEEDS,...FLOWERS].map(x=>x.id));
+    const validSeedIds=new Set([...SEEDS,...FLOWERS,...MOON_PLANTS,...BLOOD_PLANTS].map(x=>x.id));
     const validMuts=new Set(Object.keys(MUT_DATA));
     const validSizes=new Set(SIZES.map(x=>x.id));
     s.plots=s.plots.map(p=>{
@@ -675,11 +776,16 @@ function handleMoveClick(idx){
 /* ═══════════════════════════════════════
    SHOP
 ═══════════════════════════════════════ */
-function allSeedList(){return beeEventActive?FLOWERS:SEEDS;}
-function getSeedData(id){return[...SEEDS,...FLOWERS].find(s=>s.id===id);}
+function allSeedList(){
+  if(beeEventActive) return FLOWERS;
+  if(moonShopActive) return MOON_PLANTS;
+  if(bloodShopActive) return BLOOD_PLANTS;
+  return SEEDS;
+}
+function getSeedData(id){return[...SEEDS,...FLOWERS,...MOON_PLANTS,...BLOOD_PLANTS].find(s=>s.id===id);}
 
 function initShop(){
-  G.shop=[...SEEDS,...FLOWERS].map(s=>({id:s.id,qty:1,extra:0}));
+  G.shop=[...SEEDS,...FLOWERS,...MOON_PLANTS,...BLOOD_PLANTS].map(s=>({id:s.id,qty:1,extra:0}));
 }
 function restock(){
   const list=allSeedList();
@@ -1176,30 +1282,40 @@ function drawLightningBolt(ctx,x1,y1,x2,y2){
    MUTATION — each plant can accumulate ALL mutations (array)
    Fusions: hydrated+frosty → frozen(×25), windstruck+misty → twisted(×30)
 ═══════════════════════════════════════ */
-function applyMutation(plant, mutName){
+function applyMutation(plant, mutName, fromFusion=false){
   if(!plant.muts)plant.muts=[];
-  // Don't add if already has this mutation
   if(plant.muts.includes(mutName))return false;
-  // Fusion mutations cannot be applied directly by weather
-  if(MUT_DATA[mutName]&&MUT_DATA[mutName].fusion)return false;
+  // Fusion mutations can only come from checkFusions, not from weather
+  if(!fromFusion && MUT_DATA[mutName]&&MUT_DATA[mutName].fusion)return false;
   plant.muts.push(mutName);
-  // Check fusions
-  checkFusions(plant);
+  if(!fromFusion)checkFusions(plant);
   return true;
 }
 
 function checkFusions(plant){
   const m=plant.muts;
-  // hydrated + frosty → frozen
+  // hydrated + frosty → frozen (source mutations KEPT, fusion added on top)
   if(m.includes('hydrated')&&m.includes('frosty')&&!m.includes('frozen')){
     plant.muts.push('frozen');
     notify('🧊 '+(IS_FR?'Fusion : Gelé ×25 !':'Fusion: Frozen ×25!'));
   }
-  // windstruck + misty → twisted
+  // windstruck + misty → twisted (source mutations KEPT)
   if(m.includes('windstruck')&&m.includes('misty')&&!m.includes('twisted')){
     plant.muts.push('twisted');
     notify('🌀 '+(IS_FR?'Fusion : Tordu ×30 !':'Fusion: Twisted ×30!'));
   }
+  // moonlit + bloodlit → celestial ×300 (source mutations KEPT)
+  if(m.includes('moonlit')&&m.includes('bloodlit')&&!m.includes('celestial')){
+    plant.muts.push('celestial');
+    const sd=getSeedData(plant.seedId)||{name:'?'};
+    notify('⭐ '+sd.name+' — '+(IS_FR?'Céleste ×300 !':'Celestial ×300!'));
+    sfx('mutate');
+  }
+}
+
+// Periodic fusion check (every 30s) — re-checks all plants
+function checkAllFusions(){
+  G.plots.forEach(p=>{if(p.plant&&p.plant.muts&&p.plant.muts.length>=2)checkFusions(p.plant);});
 }
 
 function tryMutate(){
@@ -1450,7 +1566,7 @@ function tickDN(dt){
   document.getElementById('time-lbl').textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
   const dayEl=document.getElementById('day-lbl');
 
-  // Blood moon check: triggers on bloodMoonDay
+  // Blood moon check
   const shouldBloodMoon=(G.bloodMoonDay&&G.day>=G.bloodMoonDay&&G.isNight);
 
   if(G.isNight&&!was){
@@ -1458,21 +1574,30 @@ function tickDN(dt){
     if(shouldBloodMoon){
       isBloodMoon=true;
       document.body.classList.add('bloodmoon');
-      if(G.musicOn)switchMusic('night'); // same music as night
+      if(G.musicOn)switchMusic('night');
       notify('🩸 '+(IS_FR?'Lune de sang ! Mutation Ensanglantée ×25 !':'Blood Moon! Bloodlit mutation ×25!'));
+      // Blood shop
+      bloodShopActive=true; moonShopActive=false;
+      setShopHeader('blood');
     } else {
       isBloodMoon=false;
       document.body.classList.remove('bloodmoon');
       switchMusic('night');
+      // Moon shop
+      moonShopActive=true; bloodShopActive=false;
+      setShopHeader('moon');
     }
+    renderSeedShop();
   } else if(!G.isNight&&was){
     document.body.classList.remove('night');
     document.body.classList.remove('bloodmoon');
     isBloodMoon=false;
+    moonShopActive=false; bloodShopActive=false;
     G.day++;
-    // Advance blood moon day: every 10 nights, first at day 11
     if(G.day>G.bloodMoonDay) G.bloodMoonDay+=10;
     switchMusic('main');
+    setShopHeader('day');
+    renderSeedShop();
   }
 
   const icon=isBloodMoon?'🩸':(G.isNight?'🌙':'🌞');
@@ -1480,6 +1605,26 @@ function tickDN(dt){
                G.isNight?(IS_FR?'Nuit ':'Night '):
                (IS_FR?'Jour ':'Day ');
   dayEl.textContent=icon+' '+label+G.day;
+}
+
+function setShopHeader(mode){
+  const hdr=document.getElementById('seed-hdr');
+  const ttl=document.getElementById('seed-shop-title');
+  if(mode==='moon'){
+    hdr.className='shop-hdr moon-shop';
+    ttl.textContent=T.moonShopHdr||'🌙 MOON SHOP';
+  } else if(mode==='blood'){
+    hdr.className='shop-hdr blood-shop';
+    ttl.textContent=T.bloodShopHdr||'🩸 BLOOD SHOP';
+  } else if(mode==='bee'){
+    hdr.className='shop-hdr';
+    hdr.style.background='#443300';
+    ttl.textContent=T.flowerShopHdr||'🌻 FLOWER SHOP';
+  } else {
+    hdr.className='shop-hdr';
+    hdr.style.background='';
+    ttl.textContent=T.seedShopHdr||'🔵 SEED SHOP';
+  }
 }
 
 /* ═══════════════════════════════════════
