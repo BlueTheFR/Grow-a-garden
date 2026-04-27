@@ -49,28 +49,39 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 .plot .plant-wrap { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; height:100%; gap:0; padding:2px 2px 0; position:relative; overflow:hidden; }
 .p-main { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; width:100%; }
 .p-icon { line-height:1; }
-.p-icon.sz-tiny   { font-size:9px; }
-.p-icon.sz-small  { font-size:12px; }
-.p-icon.sz-normal { font-size:16px; }
-.p-icon.sz-big    { font-size:20px; }
-.p-icon.sz-huge   { font-size:24px; }
+.p-icon.sz-tiny   { font-size:11px; }
+.p-icon.sz-small  { font-size:14px; }
+.p-icon.sz-normal { font-size:18px; }
+.p-icon.sz-big    { font-size:22px; }
+.p-icon.sz-huge   { font-size:26px; }
 
-/* Growing = colored; done crop = full color (NOT grayscale) */
+/* Growing = colored; done crop = full color */
 .p-icon.growing   { filter:none; }
-.p-icon.done-crop { filter:none; } /* crops keep their color */
+.p-icon.done-crop { filter:none; }
 
-.p-name { font-size:5px; color:#777; text-align:center; overflow:hidden; max-width:100%; white-space:nowrap; text-overflow:ellipsis; }
+.p-name { font-size:8px; color:#aaa; text-align:center; overflow:hidden; max-width:100%; white-space:nowrap; text-overflow:ellipsis; font-weight:bold; }
 .p-bar-bg { width:80%; height:2px; background:#333; border-radius:1px; margin-top:1px; }
 .p-bar { height:100%; background:#4a4; border-radius:1px; }
-.p-heart { position:absolute; top:1px; right:2px; font-size:8px; color:#f33; line-height:1; z-index:2; }
+.p-heart { position:absolute; top:1px; right:2px; font-size:9px; color:#f33; line-height:1; z-index:2; }
 
-/* mutation icon row at bottom of plant */
-.p-muts { display:flex; flex-wrap:wrap; justify-content:center; gap:1px; min-height:8px; width:100%; padding:0 1px; }
-.p-mut-icon { font-size:7px; line-height:1; }
+/* mutation icon row — base size 12px, shrinks with data-count attribute */
+.p-muts { display:flex; flex-wrap:wrap; justify-content:center; gap:1px; min-height:10px; width:100%; padding:0 1px; }
+.p-muts[data-n="1"] .p-mut-icon { font-size:12px; }
+.p-muts[data-n="2"] .p-mut-icon { font-size:11px; }
+.p-muts[data-n="3"] .p-mut-icon { font-size:10px; }
+.p-muts[data-n="4"] .p-mut-icon { font-size:9px; }
+.p-muts[data-n="5"] .p-mut-icon { font-size:8px; }
+.p-mut-icon { font-size:9px; line-height:1; }
 
 /* plot glow per mutation — we apply via inline style for stacking */
 
-/* ── LEFT PANEL ── */
+/* ── BLOOD MOON ── */
+#bloodmoon-overlay { position:fixed; inset:0; background:rgba(120,0,0,0); pointer-events:none; transition:background 5s ease; z-index:4; }
+body.bloodmoon #bloodmoon-overlay { background:rgba(120,0,0,0.22); }
+body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55) !important; }
+
+/* ── COMPACT NUMBER FORMAT ── */
+body.compact-nums .money-display:after { content: ''; }
 #money-row { padding:6px 8px 3px; font-size:13px; color:#fd4; font-weight:bold; }
 #inv-open-btn { margin:2px 6px 3px; background:#1e1e1e; border:1px solid #333; color:#bbb; padding:4px 6px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:10px; text-align:left; }
 #inv-open-btn:hover { background:#252525; }
@@ -228,12 +239,13 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
 <canvas id="weather-canvas"></canvas>
 <div id="night-overlay"></div>
 <div id="bloodmoon-overlay"></div>
+<div id="bloodmoon-overlay"></div>
 <div id="lightning-flash"></div>
 <div id="tt"></div>
 <div id="notifs"></div>
 
 <div id="left-panel">
-  <div id="money-row">💰 $<span id="money-val">50</span></div>
+  <div id="money-row"><span id="cur-sym">💰 $</span><span id="money-val">50</span></div>
   <button id="inv-open-btn">📦 Inventory (100 slots)</button>
   <div id="sell-shop">
     <div class="shop-hdr" id="sell-hdr">🔴 SELL SHOP</div>
@@ -309,6 +321,7 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
     <div class="set-row"><span>Music</span><button class="tog on" id="tog-music">ON</button></div>
     <div class="set-row"><span>Sound FX</span><button class="tog on" id="tog-sfx">ON</button></div>
     <div class="set-row"><span>Weather Particles</span><button class="tog on" id="tog-par">ON</button></div>
+    <div class="set-row"><span id="compact-label">Compact numbers (1k…)</span><button class="tog" id="tog-compact">OFF</button></div>
     <button class="tog" id="set-close" style="align-self:flex-end;margin-top:6px;">Close</button>
   </div>
 </div>
@@ -419,11 +432,29 @@ const T = {
   stock:     IS_FR ? 'Stock : '  : 'Stock: ',
   // Seed suffix
   seedSuffix:IS_FR ? ' Graine'   : ' Seed',
+  // Currency
+  cur:       IS_FR ? '€' : '$',
+  // Compact label in settings
+  compactLabel: IS_FR ? 'Nombres compacts (1k…)' : 'Compact numbers (1k…)',
+  // Blood moon label
+  bloodMoonLabel: IS_FR ? 'Lune de sang ' : 'Blood Moon ',
 };
 
 // Helper: rarity display
 function rarityLabel(r){
-  return {common:T.rCommon,uncommon:T.rUncommon,rare:T.rRare,epic:T.rEpic,legendary:T.rLegendary}[r]||r;
+  return {common:T.rCommon,uncommon:T.rUncommon,rare:T.rRare,epic:T.rEpic,legendary:T.rLegendary,divine:IS_FR?'divin':'divine'}[r]||r;
+}
+
+// Compact number formatting
+function fmt(n){
+  n=Math.round(n);
+  if(!G||!G.compactNums)return n.toLocaleString();
+  if(n>=1e15)return(n/1e15).toFixed(1).replace(/\.0$/,'')+'Q';
+  if(n>=1e12)return(n/1e12).toFixed(1).replace(/\.0$/,'')+'T';
+  if(n>=1e9) return(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  if(n>=1e6) return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1e3) return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';
+  return n.toString();
 }
 
 // Seeds: name has EN key + FR translation
@@ -473,12 +504,13 @@ const FLOWERS=[
   {id:'f_daisy',    name:IS_FR?'Marguerite':'Daisy',    icon:'🌼',seedIcon:'🌸',rarity:'common',   price:500,   grow:120, base:300,  multiHarvest:true,isFlower:true},
   {id:'f_tulip',    name:IS_FR?'Tulipe':'Tulip',         icon:'🌷',seedIcon:'🌸',rarity:'uncommon', price:2000,  grow:200, base:1200, multiHarvest:true,isFlower:true},
   {id:'f_rose',     name:IS_FR?'Rose':'Rose',            icon:'🌹',seedIcon:'🌸',rarity:'rare',     price:6000,  grow:300, base:4000, multiHarvest:true,isFlower:true},
-  {id:'f_orchid',   name:IS_FR?'Orchidée':'Orchid',      icon:'🪷',seedIcon:'🌸',rarity:'epic',     price:20000, grow:500, base:15000,multiHarvest:true,isFlower:true},
+  {id:'f_orchid',   name:IS_FR?'Orchidée':'Orchid',      icon:'🌸',seedIcon:'🌸',rarity:'epic',     price:20000, grow:500, base:15000,multiHarvest:true,isFlower:true},
   {id:'f_lotus',    name:IS_FR?'Lotus':'Lotus',          icon:'🪷',seedIcon:'🌸',rarity:'legendary',price:60000, grow:900, base:40000,multiHarvest:true,isFlower:true},
   {id:'f_sunflower',name:IS_FR?'Tournesol':'Sunflower',  icon:'🌻',seedIcon:'🌻',rarity:'divine',   price:100000,grow:3600,base:50000,multiHarvest:true,isFlower:true},
 ];
 
 // Weather: active=5min, then clear=5min, total cycle=10min
+// wet and chilled are NOT weathers — frozen comes from hydrated+frosty, twisted from windstruck+misty
 const WEATHERS=[
   {id:'clear',   name:()=>T.wClear,  emoji:'☀', mut:null,        col:null   },
   {id:'rain',    name:()=>T.wRain,   emoji:'🌧',mut:'hydrated',  col:'#4af' },
@@ -488,12 +520,12 @@ const WEATHERS=[
   {id:'heatwave',name:()=>T.wHeat,   emoji:'🔥',mut:'scorched',  col:'#f84' },
   {id:'rainbow', name:()=>T.wRainbow,emoji:'🌈',mut:'rainbow',   col:'#f4a' },
   {id:'tornado', name:()=>T.wTornado,emoji:'🌪',mut:'windstruck',col:'#8df' },
-  {id:'wet',     name:()=>T.wWet,    emoji:'💦',mut:'wet',       col:'#36f' },
-  {id:'chilled', name:()=>T.wChilled,emoji:'🧊',mut:'chilled',   col:'#0ef' },
   {id:'bee',     name:()=>T.wBee,    emoji:'🐝',mut:'pollinated',col:'#fd4' },
 ];
 
 // Mutation info: icon + multiplier + glow
+// frozen = hydrated + frosty fusion (×25)
+// twisted = windstruck + misty fusion (×30)
 const MUT_DATA={
   moonlit:    {icon:'🌙',mult:5,   glow:'rgba(60,60,255,0.55)',  label:()=>T.mMoonlit   },
   bloodlit:   {icon:'🩸',mult:25,  glow:'rgba(180,0,0,0.65)',    label:()=>T.mBloodlit  },
@@ -504,10 +536,9 @@ const MUT_DATA={
   hydrated:   {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated  },
   misty:      {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty     },
   windstruck: {icon:'🌪',mult:3.5, glow:'rgba(150,230,255,0.55)',label:()=>T.mWindstruck},
-  twisted:    {icon:'🌀',mult:30,  glow:'rgba(100,200,255,0.65)',label:()=>T.mTwisted   },
-  wet:        {icon:'💦',mult:1.8, glow:'rgba(30,100,255,0.5)',  label:()=>T.wWet       },
-  chilled:    {icon:'🧊',mult:1.8, glow:'rgba(0,200,230,0.5)',   label:()=>T.wChilled   },
-  frozen:     {icon:'🧊',mult:25,  glow:'rgba(0,240,255,0.65)',  label:()=>T.mFrozen    },
+  // FUSION mutations (cannot be applied directly by weather — only via fusion)
+  frozen:     {icon:'🧊',mult:25,  glow:'rgba(0,240,255,0.7)',   label:()=>T.mFrozen,   fusion:true},
+  twisted:    {icon:'🌀',mult:30,  glow:'rgba(100,200,255,0.7)', label:()=>T.mTwisted,  fusion:true},
   pollinated: {icon:'🐝',mult:2,   glow:'rgba(255,220,0,0.55)',  label:()=>T.mPollinated},
 };
 
@@ -521,7 +552,8 @@ let G={
   wxDuration:0,
   wxCycleNext:600,
   mutTimer:0,
-  bloodMoonDay:0, // which day the next blood moon falls on (set at init)
+  bloodMoonDay:11, // blood moon every 10 nights = day 11, 21, 31...
+  compactNums:false,
   shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
   inv:[], bar:Array(10).fill(null), selSlot:null,
   favMode:false, moveMode:false, moveSrc:null,
@@ -582,8 +614,10 @@ function sanitize(s){
     s.money=Math.max(0,Number(s.money)||50);
     s.day=Math.max(1,Math.round(Number(s.day)||1));
     s.tod=Math.min(1,Math.max(0,Number(s.tod)||0));
-    // Blood moon scheduling
-    if(!s.bloodMoonDay||s.bloodMoonDay<=s.day)s.bloodMoonDay=s.day+5-((s.day-1)%5);
+    // Blood moon scheduling: every 10 nights, first at day 11
+    if(!s.bloodMoonDay||s.bloodMoonDay<11)s.bloodMoonDay=11;
+    // Advance if we're past it
+    while(s.bloodMoonDay<=s.day)s.bloodMoonDay+=10;
   }catch(e){console.warn('Sanitize error',e);}
   return s;
 }
@@ -606,7 +640,7 @@ function sellPlot(idx){
   if(p.fav){notify(T.notifUnfav);return;}
   const sd=getSeedData(p.seedId);
   G.money+=sd.base;
-  notify((IS_FR?'💰 Vendu parcelle : ':'💰 Plot sold: ')+sd.name+' +$'+sd.base);
+  notify((IS_FR?'💰 Vendu parcelle : ':'💰 Plot sold: ')+sd.name+' +'+T.cur+fmt(sd.base));
   plot.plant=null;
   renderAll();save();
 }
@@ -621,6 +655,22 @@ function harvestAll(){
 }
 
 /* move mode: click source then destination */
+function handleMoveClick(idx){
+  if(G.moveSrc===null){
+    if(!G.plots[idx].plant){notify(IS_FR?'❌ Pas de plante ici':'❌ No plant here');return;}
+    G.moveSrc=idx;
+    notify(IS_FR?'↕ Cliquez la destination':'↕ Click destination plot');
+    renderPlots();
+  } else {
+    const src=G.moveSrc; G.moveSrc=null;
+    if(src!==idx){
+      const tmp=G.plots[src].plant;
+      G.plots[src].plant=G.plots[idx].plant;
+      G.plots[idx].plant=tmp;
+    }
+    renderPlots();save();
+  }
+}
 
 /* ═══════════════════════════════════════
    SHOP
@@ -727,12 +777,12 @@ function sellAll(){
   let earned=0;
   G.inv=G.inv.filter(i=>{if(i.type==='crop'&&!i.fav){earned+=i.val*i.qty;return false;}return true;});
   G.bar=G.bar.map(b=>(b!==null&&G.inv[b])?b:null);
-  G.money+=earned;if(earned>0)notify(T.notifSold+earned.toLocaleString()+'!');
+  G.money+=earned;if(earned>0)notify(T.notifSold+fmt(earned)+'!');
   renderAll();save();
 }
 function sellOne(idx){
   const item=G.inv[idx];if(!item||item.type!=='crop'||item.fav){notify(T.notifUnfavFirst);return;}
-  G.money+=item.val*item.qty;notify(T.notifSoldOne+item.name+' $'+(item.val*item.qty).toLocaleString());
+  G.money+=item.val*item.qty;notify(T.notifSoldOne+item.name+' '+T.cur+fmt(item.val*item.qty));
   G.inv.splice(idx,1);G.bar=G.bar.map(b=>b===idx?null:(b>idx?b-1:b));
   renderAll();save();
 }
@@ -761,9 +811,24 @@ function getACtx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioCont
 function sfx(type){
   if(!G.sfxOn)return;
   try{
-    const ctx=getACtx(),o=ctx.createOscillator(),g=ctx.createGain();
+    const ctx=getACtx();
+    if(type==='mutate'){
+      // Nice rising chime: two oscillators, short decay
+      [523.25,783.99].forEach((freq,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=freq;
+        const t=ctx.currentTime+i*0.12;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.18,t+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+        o.start(t);o.stop(t+0.5);
+      });
+      return;
+    }
+    const o=ctx.createOscillator(),g=ctx.createGain();
     o.connect(g);g.connect(ctx.destination);
-    const SFX={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine'],mutate:[330,0.18,'sawtooth']};
+    const SFX={plant:[440,0.07,'sine'],harvest:[660,0.11,'triangle'],buy:[550,0.06,'sine'],restock:[880,0.17,'sine']};
     const[f,v,tp]=SFX[type]||[440,0.07,'sine'];
     o.type=tp;o.frequency.value=f;
     g.gain.setValueAtTime(v,ctx.currentTime);
@@ -868,8 +933,9 @@ function spawnWeatherParts(w){
     const cols=['#ff4444','#ff8800','#ffdd00','#44dd44','#3399ff','#aa44ff','#ff44aa'];
     for(let i=0;i<100;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.7,vy:-0.4-Math.random()*0.7,r:2+Math.random()*2.5,a:0.5+Math.random()*0.45,c:cols[i%cols.length],life:1,maxLife:70+Math.random()*90});
   } else if(w.id==='tornado'){
-    // Swirling debris
-    for(let i=0;i<50;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*2,vy:-0.5-Math.random(),r:1+Math.random()*2,a:0.3+Math.random()*0.3,c:'#aaccdd',life:1,maxLife:40+Math.random()*40});
+    // Debris swirling around the tornado (drawn separately in drawTornado)
+    // Just add ambient dust particles
+    for(let i=0;i<30;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*1.5,vy:-0.3-Math.random()*0.8,r:1+Math.random()*2,a:0.2+Math.random()*0.25,c:'#bbddee',life:1,maxLife:30+Math.random()*40});
   } else if(w.id==='bee'){
     // Warm golden shimmer
     for(let i=0;i<30;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:-0.2-Math.random()*0.3,r:1.5+Math.random()*2,a:0.2+Math.random()*0.3,c:Math.random()<0.5?'#ffdd44':'#ffaa00',life:1,maxLife:80+Math.random()*60});
@@ -1007,6 +1073,57 @@ function drawParts(){
     }
   });
   ctx.globalAlpha=1;
+  // Draw tornado on top if active
+  if(tornadoActive&&G.partOn) drawTornado(ctx);
+  // Draw bees on top if active
+  if(beeEventActive&&G.partOn){
+    ctx.font='14px serif';
+    bees.forEach(b=>{ctx.globalAlpha=0.9;ctx.fillText('🐝',b.x-7,b.y+5);});
+    ctx.globalAlpha=1;
+  }
+}
+
+let tornadoAngle=0;
+function drawTornado(ctx){
+  tornadoAngle+=0.08;
+  const x=tornadoX,y=tornadoY;
+  const H=140; // funnel height
+  ctx.save();
+  // Funnel layers from top (wide) to bottom (narrow tip)
+  for(let i=0;i<=12;i++){
+    const t=i/12;
+    const r=50*(1-t*0.85); // top 50px wide, tip ~7px
+    const ly=y+t*H;
+    const alpha=0.12+t*0.06;
+    ctx.strokeStyle=`rgba(150,210,240,${alpha})`;
+    ctx.lineWidth=2+t*2;
+    ctx.beginPath();
+    // Ellipse that spins
+    for(let a=0;a<=Math.PI*2;a+=0.2){
+      const ex=x+Math.cos(a+tornadoAngle*(1+t))*r;
+      const ey=ly+Math.sin(a+tornadoAngle*(1+t))*r*0.3;
+      a===0?ctx.moveTo(ex,ey):ctx.lineTo(ex,ey);
+    }
+    ctx.closePath();ctx.stroke();
+  }
+  // Dark funnel fill
+  const grad=ctx.createLinearGradient(x,y,x,y+H);
+  grad.addColorStop(0,'rgba(80,130,160,0.18)');
+  grad.addColorStop(1,'rgba(40,80,110,0.32)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(x-50,y);
+  ctx.lineTo(x+50,y);
+  ctx.lineTo(x+7,y+H);
+  ctx.lineTo(x-7,y+H);
+  ctx.closePath();ctx.fill();
+  // Ground dust cloud
+  const dustGrad=ctx.createRadialGradient(x,y+H,0,x,y+H,35);
+  dustGrad.addColorStop(0,'rgba(180,150,100,0.45)');
+  dustGrad.addColorStop(1,'transparent');
+  ctx.fillStyle=dustGrad;
+  ctx.beginPath();ctx.ellipse(x,y+H,35,12,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
 }
 
 // Lightning strike: either hits a crop (to mutate it) or random position
@@ -1057,13 +1174,32 @@ function drawLightningBolt(ctx,x1,y1,x2,y2){
 
 /* ═══════════════════════════════════════
    MUTATION — each plant can accumulate ALL mutations (array)
+   Fusions: hydrated+frosty → frozen(×25), windstruck+misty → twisted(×30)
 ═══════════════════════════════════════ */
 function applyMutation(plant, mutName){
   if(!plant.muts)plant.muts=[];
   // Don't add if already has this mutation
   if(plant.muts.includes(mutName))return false;
+  // Fusion mutations cannot be applied directly by weather
+  if(MUT_DATA[mutName]&&MUT_DATA[mutName].fusion)return false;
   plant.muts.push(mutName);
+  // Check fusions
+  checkFusions(plant);
   return true;
+}
+
+function checkFusions(plant){
+  const m=plant.muts;
+  // hydrated + frosty → frozen
+  if(m.includes('hydrated')&&m.includes('frosty')&&!m.includes('frozen')){
+    plant.muts.push('frozen');
+    notify('🧊 '+(IS_FR?'Fusion : Gelé ×25 !':'Fusion: Frozen ×25!'));
+  }
+  // windstruck + misty → twisted
+  if(m.includes('windstruck')&&m.includes('misty')&&!m.includes('twisted')){
+    plant.muts.push('twisted');
+    notify('🌀 '+(IS_FR?'Fusion : Tordu ×30 !':'Fusion: Twisted ×30!'));
+  }
 }
 
 function tryMutate(){
@@ -1107,7 +1243,12 @@ function tryMoonlit(){
    RENDER
 ═══════════════════════════════════════ */
 function renderAll(){renderMoney();renderSeedShop();renderSellShop();renderBar();renderPlots();renderInvModal();}
-function renderMoney(){document.getElementById('money-val').textContent=G.money.toLocaleString();}
+function renderMoney(){
+  const v=fmt(G.money);
+  document.getElementById('money-val').textContent=v;
+  const ms=document.getElementById('cur-sym');if(ms)ms.textContent='💰 '+T.cur;
+  const m=document.getElementById('money-val-m');if(m)m.textContent=v;
+}
 
 function renderSeedShop(){
   const body=document.getElementById('seed-body');body.innerHTML='';
@@ -1125,7 +1266,7 @@ function renderSeedShop(){
     const html=`<div class="seed-row" data-sid="${sd.id}">
       <span class="sri">${sd.icon}</span><span style="flex:1;min-width:0">
       <div class="srn" style="color:${nameColor}">${sd.name} <span class="rc ${rc}">[${rarityLabel(sd.rarity)}]</span></div>
-      <div class="srp">$${sd.price.toLocaleString()}</div>
+      <div class="srp">${T.cur}${fmt(sd.price)}</div>
       <div class="srs">${T.stock}${si.qty+si.extra}</div>
     </span></div>`;
     const row=document.createElement('div');row.innerHTML=html;
@@ -1141,7 +1282,7 @@ function renderSellShop(){
     const idx=G.inv.indexOf(item);
     const muts=item.muts&&item.muts.length?item.muts.map(m=>MUT_DATA[m]?MUT_DATA[m].icon:'').join(''):'';
     const row=document.createElement('div');row.className='sell-row';
-    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name}${muts?' '+muts:''} ×${item.qty}</div><div class="srv">$${item.val}</div></span>`;
+    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name}${muts?' '+muts:''} ×${item.qty}</div><div class="srv">${T.cur}${fmt(item.val)}</div></span>`;
     if(!item.fav)row.onclick=()=>sellOne(idx);
     body.appendChild(row);
   });
@@ -1171,17 +1312,18 @@ function renderPlots(){
 
       const ico=done?sd.icon:sd.seedIcon;
       const sz='sz-'+p.size;
-      const mutIcons=(p.muts||[]).filter(m=>MUT_DATA[m]).map(m=>`<span class="p-mut-icon" title="${MUT_DATA[m].label()} ×${MUT_DATA[m].mult}">${MUT_DATA[m].icon}</span>`).join('');
+      const mutArr=(p.muts||[]).filter(m=>MUT_DATA[m]);
+      const mutIcons=mutArr.map(m=>`<span class="p-mut-icon" title="${MUT_DATA[m].label()} ×${MUT_DATA[m].mult}">${MUT_DATA[m].icon}</span>`).join('');
       const nameColor=RARITY_COLOR[sd.rarity]||'#aaa';
 
       div.innerHTML=`<div class="plant-wrap">
         ${p.fav?'<span class="p-heart">♥</span>':''}
         <div class="p-main">
           <span class="p-icon ${sz} ${done?'done-crop':'growing'}">${ico}</span>
-          <span class="p-name" style="color:${done?nameColor:'#666'}">${sd.name.slice(0,7)}${p.regrow?'↺':''}</span>
+          <span class="p-name" style="color:${done?nameColor:'#888'}">${sd.name.slice(0,9)}${p.regrow?'↺':''}</span>
           ${!done?`<div class="p-bar-bg"><div class="p-bar" style="width:${(prog*100).toFixed(0)}%"></div></div>`:''}
         </div>
-        ${mutIcons?`<div class="p-muts">${mutIcons}</div>`:'<div class="p-muts"></div>'}
+        <div class="p-muts" data-n="${Math.min(mutArr.length,5)||1}">${mutIcons}</div>
       </div>`;
 
       div.addEventListener('mouseenter',e=>showTT(e,p,sd));
@@ -1236,7 +1378,7 @@ function renderInvModal(){
     const idx=G.inv.indexOf(item);
     const div=document.createElement('div');div.className='ig'+(item.fav?' faved':'');
     const muts=item.muts&&item.muts.length?item.muts.map(m=>MUT_DATA[m]?MUT_DATA[m].icon:'').join(''):'';
-    div.innerHTML=`${item.fav?'<span class="ig-f">♥</span>':''}<span class="ig-i">${item.icon}</span><span class="ig-n">${item.name}${muts?' '+muts:''}</span><span class="ig-q">×${item.qty}</span>${item.val?`<span class="ig-v">$${item.val}</span>`:''}`;
+    div.innerHTML=`${item.fav?'<span class="ig-f">♥</span>':''}<span class="ig-i">${item.icon}</span><span class="ig-n">${item.name}${muts?' '+muts:''}</span><span class="ig-q">×${item.qty}</span>${item.val?`<span class="ig-v">${T.cur}${fmt(item.val)}</span>`:''}`;
     div.onclick=()=>{if(item.type==='crop'){item.fav=!item.fav;renderInvModal();renderSellShop();save();}};
     div.addEventListener('contextmenu',e=>{e.preventDefault();if(item.type==='seed'){const e2=G.bar.findIndex(b=>b===null);if(e2>=0&&!G.bar.includes(idx)){G.bar[e2]=idx;renderBar();}}});
     grid.appendChild(div);
@@ -1273,8 +1415,8 @@ function showTT(e,plant,sd){
     ${favLine}
     <div class="tt-s">${T.ttSize}${sz.label()} (${pct>=0?'+':''}${pct}%)</div>
     ${mutsHtml}
-    <div class="tt-v">${T.ttValue}${val.toLocaleString()}</div>
-    <div class="tt-base">${T.ttBase}${base}</div>
+    <div class="tt-v">${T.ttValue}${fmt(val)}</div>
+    <div class="tt-base">${T.ttBase}${fmt(base)}</div>
     <div class="tt-t">${tl}${plant.regrow?T.ttRegrow:''}</div>
     <div class="tt-t" style="color:#555;font-size:9px">${IS_FR?'Clic droit = vendre (base)':'Right-click = sell (base value)'}</div>`;
   tt.classList.add('show');ttOn=true;moveTT(e);
@@ -1328,10 +1470,8 @@ function tickDN(dt){
     document.body.classList.remove('bloodmoon');
     isBloodMoon=false;
     G.day++;
-    // Schedule next blood moon
-    if(G.bloodMoonDay&&G.day>G.bloodMoonDay){
-      G.bloodMoonDay=G.day+5-((G.day-1)%5);
-    }
+    // Advance blood moon day: every 10 nights, first at day 11
+    if(G.day>G.bloodMoonDay) G.bloodMoonDay+=10;
     switchMusic('main');
   }
 
@@ -1506,6 +1646,12 @@ document.getElementById('set-close').onclick=()=>document.getElementById('set-mo
 document.getElementById('tog-music').onclick=function(){G.musicOn=!G.musicOn;this.textContent=G.musicOn?T.on:T.off;this.classList.toggle('on',G.musicOn);G.musicOn?switchMusic(G.isNight?'night':'main'):stopMusic();};
 document.getElementById('tog-sfx').onclick=function(){G.sfxOn=!G.sfxOn;this.textContent=G.sfxOn?T.on:T.off;this.classList.toggle('on',G.sfxOn);};
 document.getElementById('tog-par').onclick=function(){G.partOn=!G.partOn;this.textContent=G.partOn?T.on:T.off;this.classList.toggle('on',G.partOn);if(!G.partOn)parts=[];};
+document.getElementById('tog-compact').onclick=function(){
+  G.compactNums=!G.compactNums;
+  this.textContent=G.compactNums?T.on:T.off;
+  this.classList.toggle('on',G.compactNums);
+  renderAll();save();
+};
 document.querySelectorAll('.ifbtn').forEach(b=>{b.onclick=()=>{document.querySelectorAll('.ifbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');invFilter=b.dataset.f;renderInvModal();};});
 document.addEventListener('keydown',e=>{
   const n=parseInt(e.key);
@@ -1573,11 +1719,30 @@ function init(){
   if(setRows[0])setRows[0].textContent=T.music;
   if(setRows[1])setRows[1].textContent=T.sfx;
   if(setRows[2])setRows[2].textContent=T.particles;
+  const compactLbl=document.getElementById('compact-label');
+  if(compactLbl)compactLbl.textContent=IS_FR?'Nombres compacts (1k…)':'Compact numbers (1k…)';
+  const togCompact=document.getElementById('tog-compact');
+  if(togCompact){
+    togCompact.textContent=G.compactNums?T.on:T.off;
+    togCompact.classList.toggle('on',G.compactNums);
+  }
   document.getElementById('set-close').textContent=T.close;
   // wx-timer label prefix
   document.getElementById('wx-timer-label').textContent=IS_FR?'Prochain : ':'Next: ';
 
+  // Init blood moon day if not set
+  if(!G.bloodMoonDay||G.bloodMoonDay<11)G.bloodMoonDay=11;
+  while(G.bloodMoonDay<=G.day)G.bloodMoonDay+=10;
+
+  // Init blood moon overlay element (may not exist if loaded from older HTML)
+  if(!document.getElementById('bloodmoon-overlay')){
+    const ov=document.createElement('div');ov.id='bloodmoon-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(120,0,0,0);pointer-events:none;transition:background 5s ease;z-index:4;';
+    document.body.appendChild(ov);
+  }
+
   document.body.classList.toggle('night',G.isNight);
+  if(isBloodMoon)document.body.classList.add('bloodmoon');
   renderAll();
   document.addEventListener('click',function startMu(){buildAudio();switchMusic(G.isNight?'night':'main');document.removeEventListener('click',startMu);},{once:true});
   lastT=performance.now();requestAnimationFrame(loop);
