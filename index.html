@@ -1991,9 +1991,9 @@ function init(){
   document.getElementById('wx-timer-label').textContent=IS_FR?'Prochain : ':'Next: ';
 
   // Init blood moon: first at night of day 3, then every 2 days
-  if(!G.bloodMoonDay||G.bloodMoonDay<3) G.bloodMoonDay=3;
+  if(!G.bloodMoonDay||G.bloodMoonDay<2) G.bloodMoonDay=2;
   // If we're already past the scheduled blood moon, advance it
-  while(G.bloodMoonDay<=G.day) G.bloodMoonDay+=2;
+  while(G.bloodMoonDay<=G.day) G.bloodMoonDay+=1;
 
   // Init blood moon overlay element (may not exist if loaded from older HTML)
   if(!document.getElementById('bloodmoon-overlay')){
