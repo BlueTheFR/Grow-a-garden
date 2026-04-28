@@ -247,6 +247,13 @@ body.compact-nums .money-display:after { content: ''; }
 .tog.on { background:#062006; border-color:#2a5a2a; color:#7d7; }
 .tog:hover { opacity:0.85; }
 
+@media (hover:none) {
+  .plot { cursor:pointer; }
+  .b-slot { cursor:pointer; }
+  .seed-row { cursor:pointer; }
+  .sell-row { cursor:pointer; }
+}
+
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-track { background:#111; }
 ::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
@@ -258,33 +265,59 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
 
 /* ── MOBILE RESPONSIVE ── */
 @media (max-width: 700px) {
+  body { cursor: auto; }
+  #cursor, #cursor-label { display: none; }
+  /* Hide desktop side panels — use mobile drawer instead */
   #left-panel, #right-panel { width:0; overflow:hidden; border:none; }
-  #top-bar { left:0; right:0; height:40px; gap:4px; padding:0 6px; overflow-x:auto; }
-  #bottom-bar { left:0; right:0; height:76px; padding:3px 4px; gap:3px; }
-  #map-area { left:0; right:0; top:40px; bottom:76px; }
-  #plots-wrap { inset:4px; gap:3px; }
-  .p-icon.sz-tiny   { font-size:13px; }
-  .p-icon.sz-small  { font-size:16px; }
-  .p-icon.sz-normal { font-size:20px; }
-  .p-icon.sz-big    { font-size:24px; }
-  .p-icon.sz-huge   { font-size:28px; }
+  /* Top bar */
+  #top-bar { left:0; right:0; height:44px; gap:3px; padding:0 4px; overflow-x:auto; }
+  /* Bottom seed bar */
+  #bottom-bar { left:0; right:0; height:72px; padding:3px 4px; gap:3px; }
+  .b-slot { width:54px; height:54px; }
+  .b-si { font-size:20px; }
+  .b-sn { font-size:7px; }
+  /* Map */
+  #map-area { left:0; right:0; top:44px; bottom:72px; }
+  /* Plots: smaller gap, fill area */
+  #plots-wrap { position:absolute; inset:3px; display:grid; grid-template-columns:repeat(10,1fr); grid-auto-rows:1fr; gap:2px; }
+  .p-icon.sz-tiny   { font-size:12px; }
+  .p-icon.sz-small  { font-size:15px; }
+  .p-icon.sz-normal { font-size:18px; }
+  .p-icon.sz-big    { font-size:21px; }
+  .p-icon.sz-huge   { font-size:24px; }
   .p-name { font-size:6px; }
   .p-mut-icon { font-size:8px; }
-  .b-slot { width:58px; height:58px; }
-  .b-si { font-size:20px; }
-  #mobile-panels { display:flex !important; }
+  /* Top-bar buttons smaller */
   .tb-btn { font-size:9px; padding:3px 5px; }
   #top-info { display:none; }
-}
-@media (max-width: 700px) {
-  /* Mobile panel drawer - bottom sheet */
-  #mobile-panels { position:fixed; bottom:76px; left:0; right:0; z-index:20; display:none; flex-direction:row; gap:0; max-height:220px; }
-  #mobile-left { flex:1; background:#151515; border-top:2px solid #700; overflow-y:auto; display:flex; flex-direction:column; }
-  #mobile-right { flex:1; background:#151515; border-top:2px solid #007; overflow-y:auto; display:flex; flex-direction:column; }
+  /* Tooltip smaller on mobile */
+  #tt { max-width:190px; font-size:10px; }
+  /* Inventory modal: full screen on mobile */
+  #inv-box { width:100vw; max-height:92vh; border-radius:0; }
+  #inv-grid { grid-template-columns:repeat(5,1fr); }
+  /* Mobile panel toggle visible */
   #mobile-panel-toggle { display:flex !important; }
 }
+
+/* Mobile slide-up panel (sell shop + seed shop) */
 #mobile-panel-toggle { display:none; }
-#mobile-panels { display:none; }
+#mobile-panels {
+  display:none;
+  position:fixed; left:0; right:0; bottom:72px; z-index:30;
+  flex-direction:row; gap:0; height:250px;
+  box-shadow:0 -3px 12px rgba(0,0,0,0.6);
+}
+@media (max-width:700px) {
+  #mobile-panels.open { display:flex; }
+}
+#mobile-left {
+  flex:1; background:#151515; border-top:2px solid #700;
+  overflow-y:auto; display:flex; flex-direction:column;
+}
+#mobile-right {
+  flex:1; background:#151515; border-top:2px solid #007;
+  overflow-y:auto; display:flex; flex-direction:column;
+}
 
 </style>
 </head>
@@ -330,16 +363,19 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
   <span id="top-info">50 plots · click=plant/harvest · right-click=sell · F=fav · M=move</span>
 </div>
 
-<!-- Mobile panels (shop + sell, shown below top bar on phones) -->
+<!-- Mobile panels (shop + sell, toggled via 📋 button) -->
 <div id="mobile-panels">
   <div id="mobile-left">
-    <div style="padding:3px 5px;font-size:11px;color:#fd4;font-weight:bold">💰 $<span id="money-val-m">0</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:3px 5px;background:#1a0000">
+      <span style="font-size:11px;color:#fd4;font-weight:bold">💰 <span id="cur-sym-m">$</span><span id="money-val-m">0</span></span>
+      <button onclick="document.getElementById('inv-modal').classList.add('open');renderInvModal();" style="background:#222;border:1px solid #555;color:#ccc;font-size:9px;padding:2px 5px;border-radius:2px;cursor:pointer;font-family:inherit">📦 Inv</button>
+    </div>
     <div style="font-size:10px;font-weight:bold;padding:2px 5px;background:#700;color:#fbb">🔴 SELL</div>
     <div id="sell-body-m" style="flex:1;overflow-y:auto;padding:2px;font-size:9px"></div>
-    <button onclick="sellAll()" style="background:#900;color:#fcc;border:none;padding:3px;font-family:inherit;font-size:9px;cursor:pointer;font-weight:bold">SELL ALL</button>
+    <button onclick="sellAll()" style="background:#900;color:#fcc;border:none;border-top:1px solid #700;padding:4px;font-family:inherit;font-size:9px;cursor:pointer;font-weight:bold;width:100%">SELL ALL</button>
   </div>
   <div id="mobile-right">
-    <div style="font-size:10px;font-weight:bold;padding:2px 5px;background:#007;color:#bbf;display:flex;justify-content:space-between">
+    <div style="font-size:10px;font-weight:bold;padding:2px 5px;display:flex;justify-content:space-between;align-items:center" id="mobile-shop-hdr">
       <span id="seed-shop-title-m">🔵 SEEDS</span>
       <span id="restock-time-m" style="font-size:8px;color:#88f"></span>
     </div>
@@ -389,6 +425,10 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
    I18N — French if navigator.language starts with 'fr', else English
 ═══════════════════════════════════════ */
 const IS_FR = navigator.language && navigator.language.toLowerCase().startsWith('fr');
+
+function toggleMobilePanels(){
+  document.getElementById('mobile-panels').classList.toggle('open');
+}
 
 const T = {
   // UI labels
@@ -715,10 +755,9 @@ function sanitize(s){
     s.money=Math.max(0,Number(s.money)||50);
     s.day=Math.max(1,Math.round(Number(s.day)||1));
     s.tod=Math.min(1,Math.max(0,Number(s.tod)||0));
-    // Blood moon scheduling: every 10 nights, first at day 11
-    if(!s.bloodMoonDay||s.bloodMoonDay<11)s.bloodMoonDay=11;
-    // Advance if we're past it
-    while(s.bloodMoonDay<=s.day)s.bloodMoonDay+=10;
+    // Blood moon scheduling: every 2 nights, first at day 3
+    if(!s.bloodMoonDay||s.bloodMoonDay<3)s.bloodMoonDay=3;
+    while(s.bloodMoonDay<=s.day)s.bloodMoonDay+=2;
   }catch(e){console.warn('Sanitize error',e);}
   return s;
 }
@@ -1363,7 +1402,8 @@ function renderMoney(){
   const v=fmt(G.money);
   document.getElementById('money-val').textContent=v;
   const ms=document.getElementById('cur-sym');if(ms)ms.textContent='💰 '+T.cur;
-  const m=document.getElementById('money-val-m');if(m)m.textContent=v;
+  const vm=document.getElementById('money-val-m');if(vm)vm.textContent=v;
+  const csm=document.getElementById('cur-sym-m');if(csm)csm.textContent=T.cur;
 }
 
 function renderSeedShop(){
@@ -1394,13 +1434,22 @@ function renderSeedShop(){
 
 function renderSellShop(){
   const body=document.getElementById('sell-body');body.innerHTML='';
-  G.inv.filter(i=>i.type==='crop').sort((a,b)=>(a.val||0)-(b.val||0)).forEach(item=>{
+  const bodyM=document.getElementById('sell-body-m');if(bodyM)bodyM.innerHTML='';
+  const crops=G.inv.filter(i=>i.type==='crop').sort((a,b)=>(a.val||0)-(b.val||0));
+  if(!crops.length){
+    const empty=`<div style="padding:6px;color:#555;font-size:9px;text-align:center">${IS_FR?'Pas de récolte':'No crops'}</div>`;
+    body.innerHTML=empty;
+    if(bodyM)bodyM.innerHTML=empty;
+    return;
+  }
+  crops.forEach(item=>{
     const idx=G.inv.indexOf(item);
     const muts=item.muts&&item.muts.length?item.muts.map(m=>MUT_DATA[m]?MUT_DATA[m].icon:'').join(''):'';
-    const row=document.createElement('div');row.className='sell-row';
-    row.innerHTML=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name}${muts?' '+muts:''} ×${item.qty}</div><div class="srv">${T.cur}${fmt(item.val)}</div></span>`;
+    const html=`<span class="sri">${item.icon}</span><span style="flex:1;min-width:0"><div class="srn">${item.fav?'♥ ':''}${item.name}${muts?' '+muts:''} ×${item.qty}</div><div class="srv">${T.cur}${fmt(item.val)}</div></span>`;
+    const row=document.createElement('div');row.className='sell-row';row.innerHTML=html;
     if(!item.fav)row.onclick=()=>sellOne(idx);
     body.appendChild(row);
+    if(bodyM){const r2=row.cloneNode(true);if(!item.fav)r2.onclick=()=>sellOne(idx);bodyM.appendChild(r2);}
   });
 }
 
@@ -1538,7 +1587,20 @@ function showTT(e,plant,sd){
   tt.classList.add('show');ttOn=true;moveTT(e);
 }
 function hideTT(){document.getElementById('tt').classList.remove('show');ttOn=false;}
-function moveTT(e){const tt=document.getElementById('tt');tt.style.left=(e.clientX+18)+'px';tt.style.top=(e.clientY+6)+'px';}
+function moveTT(e){
+  const tt=document.getElementById('tt');
+  const W=window.innerWidth,H=window.innerHeight;
+  const tw=tt.offsetWidth||230,th=tt.offsetHeight||160;
+  // Prefer above cursor; fall back to below if not enough room
+  let top=e.clientY-th-10;
+  if(top<4)top=e.clientY+20;
+  // Horizontal: left-align but clamp to screen
+  let left=e.clientX+10;
+  if(left+tw>W-4)left=e.clientX-tw-10;
+  if(left<4)left=4;
+  tt.style.left=left+'px';
+  tt.style.top=top+'px';
+}
 document.addEventListener('mousemove',e=>{if(ttOn)moveTT(e);});
 
 /* ═══════════════════════════════════════
@@ -1594,7 +1656,8 @@ function tickDN(dt){
     isBloodMoon=false;
     moonShopActive=false; bloodShopActive=false;
     G.day++;
-    if(G.day>G.bloodMoonDay) G.bloodMoonDay+=10;
+    // Blood moon every 2 nights: advance by 2
+    if(G.day>=G.bloodMoonDay) G.bloodMoonDay=G.day+2;
     switchMusic('main');
     setShopHeader('day');
     renderSeedShop();
@@ -1610,20 +1673,24 @@ function tickDN(dt){
 function setShopHeader(mode){
   const hdr=document.getElementById('seed-hdr');
   const ttl=document.getElementById('seed-shop-title');
+  const hdrM=document.getElementById('mobile-shop-hdr');
+  const ttlM=document.getElementById('seed-shop-title-m');
   if(mode==='moon'){
-    hdr.className='shop-hdr moon-shop';
-    ttl.textContent=T.moonShopHdr||'🌙 MOON SHOP';
+    hdr.className='shop-hdr moon-shop'; ttl.textContent=T.moonShopHdr||'🌙 MOON SHOP';
+    if(hdrM){hdrM.style.background='linear-gradient(90deg,#114,#226)';hdrM.style.color='#adf';}
+    if(ttlM)ttlM.textContent='🌙 '+(IS_FR?'LUNAIRE':'MOON');
   } else if(mode==='blood'){
-    hdr.className='shop-hdr blood-shop';
-    ttl.textContent=T.bloodShopHdr||'🩸 BLOOD SHOP';
+    hdr.className='shop-hdr blood-shop'; ttl.textContent=T.bloodShopHdr||'🩸 BLOOD SHOP';
+    if(hdrM){hdrM.style.background='linear-gradient(90deg,#400,#600)';hdrM.style.color='#faa';}
+    if(ttlM)ttlM.textContent='🩸 '+(IS_FR?'SANG':'BLOOD');
   } else if(mode==='bee'){
-    hdr.className='shop-hdr';
-    hdr.style.background='#443300';
-    ttl.textContent=T.flowerShopHdr||'🌻 FLOWER SHOP';
+    hdr.className='shop-hdr'; hdr.style.background='#443300'; ttl.textContent=T.flowerShopHdr||'🌻 FLOWER SHOP';
+    if(hdrM){hdrM.style.background='#443300';hdrM.style.color='#ffdd44';}
+    if(ttlM)ttlM.textContent='🌻 '+(IS_FR?'FLEURS':'FLOWERS');
   } else {
-    hdr.className='shop-hdr';
-    hdr.style.background='';
-    ttl.textContent=T.seedShopHdr||'🔵 SEED SHOP';
+    hdr.className='shop-hdr'; hdr.style.background=''; ttl.textContent=T.seedShopHdr||'🔵 SEED SHOP';
+    if(hdrM){hdrM.style.background='#007';hdrM.style.color='#bbf';}
+    if(ttlM)ttlM.textContent='🔵 '+(IS_FR?'GRAINES':'SEEDS');
   }
 }
 
@@ -1724,10 +1791,10 @@ function loop(now){
   tickWeather(dt);
   tickMutation(dt);
 
-  // Night moonlit mutation
-  if(G.isNight){
-    G.mutTimer+=0; // already handled above; night runs separately
-    // small timer reuse for moonlit
+  // Fusion check every 30s
+  if(Math.floor(now/30000)!==Math.floor((now-dt*1000)/30000)){
+    checkAllFusions();
+    G._ts=Date.now();save();
   }
   // Moonlit uses its own cadence (~10s via separate check)
   if(Math.floor(now/10000)!==Math.floor((now-dt*1000)/10000)){
@@ -1738,13 +1805,12 @@ function loop(now){
   shopT+=dt;
   if(shopT>=300){shopT=0;restock();}
   const rem=Math.max(0,300-shopT);
-  document.getElementById('restock-time').textContent=Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+  const restockTxt=Math.floor(rem/60)+':'+Math.floor(rem%60).toString().padStart(2,'0');
+  document.getElementById('restock-time').textContent=restockTxt;
+  const rtm=document.getElementById('restock-time-m');if(rtm)rtm.textContent=restockTxt;
 
   tickDN(dt);
   tickParts();drawParts();
-
-  // Auto-save every 30s
-  if(Math.floor(now/30000)!==Math.floor((now-dt*1000)/30000)){G._ts=Date.now();save();}
 
   // Cursor
   const c=document.getElementById('cursor'),l=document.getElementById('cursor-label');
@@ -1825,6 +1891,12 @@ document.addEventListener('keydown',e=>{
 function resizeCv(){const cv=document.getElementById('weather-canvas');cv.width=window.innerWidth;cv.height=window.innerHeight;}
 window.addEventListener('resize',resizeCv);resizeCv();
 
+// Close mobile panels when tapping on the map
+document.getElementById('map-area').addEventListener('touchstart',()=>{
+  const p=document.getElementById('mobile-panels');
+  if(p.classList.contains('open'))p.classList.remove('open');
+},{passive:true});
+
 /* ═══════════════════════════════════════
    INIT
 ═══════════════════════════════════════ */
@@ -1875,9 +1947,13 @@ function init(){
   // wx-timer label prefix
   document.getElementById('wx-timer-label').textContent=IS_FR?'Prochain : ':'Next: ';
 
-  // Init blood moon day if not set
-  if(!G.bloodMoonDay||G.bloodMoonDay<11)G.bloodMoonDay=11;
-  while(G.bloodMoonDay<=G.day)G.bloodMoonDay+=10;
+  // Init blood moon: every 2 nights from day 1 → first blood moon night = day 3, then 5, 7...
+  // bloodMoonDay = next day whose night is a blood moon (must be odd and >=3)
+  if(!G.bloodMoonDay||G.bloodMoonDay<3){
+    G.bloodMoonDay=3;
+  }
+  // Advance past current day
+  while(G.bloodMoonDay<=G.day) G.bloodMoonDay+=2;
 
   // Init blood moon overlay element (may not exist if loaded from older HTML)
   if(!document.getElementById('bloodmoon-overlay')){
