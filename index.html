@@ -552,12 +552,29 @@ function fmt(n){
   n=Math.round(n);
   if(!G||!G.compactNums)return n.toLocaleString();
   const abs=Math.abs(n);
-  if(abs>=1e18)return(n/1e18).toFixed(1).replace(/\.0$/,'')+'Qi';
-  if(abs>=1e15)return(n/1e15).toFixed(1).replace(/\.0$/,'')+'Q';
-  if(abs>=1e12)return(n/1e12).toFixed(1).replace(/\.0$/,'')+'T';
-  if(abs>=1e9) return(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
-  if(abs>=1e6) return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
-  if(abs>=1e3) return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';
+  if (abs >= 1e303) return (n / 1e303).toFixed(1).replace(/\.0+$/, '') + "Ct";
+  if (abs >= 1e100) return (n / 1e100).toFixed(1).replace(/\.0+$/, '') + "Gg";
+  if (abs >= 1e63)  return (n / 1e63).toFixed(1).replace(/\.0+$/, '')  + "Vi";
+  if (abs >= 1e60)  return (n / 1e60).toFixed(1).replace(/\.0+$/, '')  + "NV";
+  if (abs >= 1e57)  return (n / 1e57).toFixed(1).replace(/\.0+$/, '')  + "OV";
+  if (abs >= 1e54)  return (n / 1e54).toFixed(1).replace(/\.0+$/, '')  + "SpV";
+  if (abs >= 1e51)  return (n / 1e51).toFixed(1).replace(/\.0+$/, '')  + "SxV";
+  if (abs >= 1e48)  return (n / 1e48).toFixed(1).replace(/\.0+$/, '')  + "QnV";
+  if (abs >= 1e45)  return (n / 1e45).toFixed(1).replace(/\.0+$/, '')  + "QdV";
+  if (abs >= 1e42)  return (n / 1e42).toFixed(1).replace(/\.0+$/, '')  + "TV";
+  if (abs >= 1e39)  return (n / 1e39).toFixed(1).replace(/\.0+$/, '')  + "DV";
+  if (abs >= 1e36)  return (n / 1e36).toFixed(1).replace(/\.0+$/, '')  + "Ud";
+  if (abs >= 1e33)  return (n / 1e33).toFixed(1).replace(/\.0+$/, '')  + "Dc";
+  if (abs >= 1e30)  return (n / 1e30).toFixed(1).replace(/\.0+$/, '')  + "No";
+  if (abs >= 1e27)  return (n / 1e27).toFixed(1).replace(/\.0+$/, '')  + "Oc";
+  if (abs >= 1e24)  return (n / 1e24).toFixed(1).replace(/\.0+$/, '')  + "Sp";
+  if (abs >= 1e21)  return (n / 1e21).toFixed(1).replace(/\.0+$/, '')  + "Sx";
+  if (abs >= 1e18)  return (n / 1e18).toFixed(1).replace(/\.0$/, '')   + "Qn";
+  if (abs >= 1e15)  return (n / 1e15).toFixed(1).replace(/\.0$/, '')   + "QD";
+  if (abs >= 1e12)  return (n / 1e12).toFixed(1).replace(/\.0$/, '')   + "T";
+  if (abs >= 1e9)   return (n / 1e9).toFixed(1).replace(/\.0$/, '')    + "B";
+  if (abs >= 1e6)   return (n / 1e6).toFixed(1).replace(/\.0$/, '')    + "M";
+  if (abs >= 1e3)   return (n / 1e3).toFixed(1).replace(/\.0$/, '')    + "k";
   return n.toString();
 }
 
