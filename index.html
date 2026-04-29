@@ -80,6 +80,42 @@ body.night #night-overlay { background:rgba(0,0,25,0.5); }
 body.bloodmoon #bloodmoon-overlay { background:rgba(120,0,0,0.22); }
 body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55) !important; }
 
+/* ── SANDSTORM ── */
+#sandstorm-overlay { position:fixed; inset:0; background:rgba(180,140,60,0); pointer-events:none; transition:background 4s ease; z-index:4; }
+body.sandstorm #sandstorm-overlay { background:rgba(180,140,60,0.18); }
+
+/* ── DISCO ── */
+#disco-overlay { position:fixed; inset:0; background:rgba(0,0,0,0); pointer-events:none; z-index:4; transition:background 0.15s; }
+body.disco #disco-overlay { animation:disco-flash 0.5s infinite alternate; }
+@keyframes disco-flash {
+  0%   { background:rgba(255,0,200,0.06); }
+  25%  { background:rgba(0,200,255,0.06); }
+  50%  { background:rgba(255,220,0,0.06); }
+  75%  { background:rgba(0,255,120,0.06); }
+  100% { background:rgba(200,0,255,0.06); }
+}
+/* Disco rainbow glow on plants with disco mutation */
+@keyframes disco-glow {
+  0%   { box-shadow: inset 0 0 10px rgba(255,0,200,0.8); }
+  16%  { box-shadow: inset 0 0 10px rgba(255,120,0,0.8); }
+  33%  { box-shadow: inset 0 0 10px rgba(255,240,0,0.8); }
+  50%  { box-shadow: inset 0 0 10px rgba(0,255,80,0.8);  }
+  66%  { box-shadow: inset 0 0 10px rgba(0,180,255,0.8); }
+  83%  { box-shadow: inset 0 0 10px rgba(140,0,255,0.8); }
+  100% { box-shadow: inset 0 0 10px rgba(255,0,200,0.8); }
+}
+.plot.disco-plant { animation: disco-glow 1s linear infinite !important; }
+
+/* ── AURORA ── */
+#aurora-overlay { position:fixed; inset:0; background:rgba(0,255,150,0); pointer-events:none; transition:background 5s ease; z-index:4; }
+body.aurora #aurora-overlay { animation: aurora-wave 6s ease-in-out infinite alternate; }
+@keyframes aurora-wave {
+  0%   { background:rgba(0,255,150,0.07); }
+  33%  { background:rgba(0,180,255,0.09); }
+  66%  { background:rgba(100,0,255,0.07); }
+  100% { background:rgba(0,255,200,0.08); }
+}
+
 /* ── COMPACT NUMBER FORMAT ── */
 body.compact-nums .money-display:after { content: ''; }
 #money-row { padding:6px 8px 3px; font-size:13px; color:#fd4; font-weight:bold; }
@@ -327,6 +363,9 @@ body.bloodmoon #night-overlay { background:rgba(30,0,10,0.55); }
 <canvas id="weather-canvas"></canvas>
 <div id="night-overlay"></div>
 <div id="bloodmoon-overlay"></div>
+<div id="sandstorm-overlay"></div>
+<div id="disco-overlay"></div>
+<div id="aurora-overlay"></div>
 <div id="lightning-flash"></div>
 <div id="tt"></div>
 <div id="notifs"></div>
@@ -489,6 +528,9 @@ const T = {
   wWet:       IS_FR ? 'Mouillé'   : 'Wet',
   wChilled:   IS_FR ? 'Froid'     : 'Chilled',
   wBee:       IS_FR ? "Essaim d'abeilles" : 'Bee Swarm',
+  wSandstorm: IS_FR ? 'Tempête de sable'  : 'Sandstorm',
+  wDisco:     IS_FR ? 'Disco'             : 'Disco',
+  wAurora:    IS_FR ? 'Aurore Boréale'    : 'Aurora',
   // Weather timer labels
   wxActive:   IS_FR ? 'Actif '    : 'Active ',
   wxNext:     IS_FR ? 'Prochain ' : 'Next ',
@@ -507,6 +549,12 @@ const T = {
   mTwisted:   IS_FR ? 'Tordu'         : 'Twisted',
   mFrozen:    IS_FR ? 'Gelé'          : 'Frozen',
   mPollinated:IS_FR ? 'Pollinisé'     : 'Pollinated',
+  mSandy:     IS_FR ? 'Sableux'       : 'Sandy',
+  mMud:       IS_FR ? 'Boueux'        : 'Muddy',
+  mClay:      IS_FR ? 'Argileux'      : 'Clay',
+  mPot:       IS_FR ? 'En Pot'        : 'Potted',
+  mDisco:     IS_FR ? 'Disco'         : 'Disco',
+  mAurora:    IS_FR ? 'Aurore'        : 'Aurora',
   // Rarity
   rPrismatic: IS_FR ? 'prismatique'   : 'prismatic',
   // Shop headers
@@ -681,15 +729,18 @@ const BLOOD_PLANTS=[
 // Weather: active=5min, then clear=5min, total cycle=10min
 // wet and chilled are NOT weathers — frozen comes from hydrated+frosty, twisted from windstruck+misty
 const WEATHERS=[
-  {id:'clear',   name:()=>T.wClear,  emoji:'☀', mut:null,        col:null   },
-  {id:'rain',    name:()=>T.wRain,   emoji:'🌧',mut:'hydrated',  col:'#4af' },
-  {id:'storm',   name:()=>T.wStorm,  emoji:'⛈',mut:'stormy',    col:'#a4f' },
-  {id:'fog',     name:()=>T.wFog,    emoji:'🌫',mut:'misty',     col:'#aaa' },
-  {id:'frost',   name:()=>T.wFrost,  emoji:'❄', mut:'frosty',   col:'#4ff' },
-  {id:'heatwave',name:()=>T.wHeat,   emoji:'🔥',mut:'scorched',  col:'#f84' },
-  {id:'rainbow', name:()=>T.wRainbow,emoji:'🌈',mut:'rainbow',   col:'#f4a' },
-  {id:'tornado', name:()=>T.wTornado,emoji:'🌪',mut:'windstruck',col:'#8df' },
-  {id:'bee',     name:()=>T.wBee,    emoji:'🐝',mut:'pollinated',col:'#fd4' },
+  {id:'clear',     name:()=>T.wClear,     emoji:'☀', mut:null,        col:null   },
+  {id:'rain',      name:()=>T.wRain,      emoji:'🌧',mut:'hydrated',  col:'#4af' },
+  {id:'storm',     name:()=>T.wStorm,     emoji:'⛈',mut:'stormy',    col:'#a4f' },
+  {id:'fog',       name:()=>T.wFog,       emoji:'🌫',mut:'misty',     col:'#aaa' },
+  {id:'frost',     name:()=>T.wFrost,     emoji:'❄', mut:'frosty',   col:'#4ff' },
+  {id:'heatwave',  name:()=>T.wHeat,      emoji:'🔥',mut:'scorched',  col:'#f84' },
+  {id:'rainbow',   name:()=>T.wRainbow,   emoji:'🌈',mut:'rainbow',   col:'#f4a' },
+  {id:'tornado',   name:()=>T.wTornado,   emoji:'🌪',mut:'windstruck',col:'#8df' },
+  {id:'bee',       name:()=>T.wBee,       emoji:'🐝',mut:'pollinated',col:'#fd4' },
+  {id:'sandstorm', name:()=>T.wSandstorm, emoji:'🏜',mut:'sandy',     col:'#c93' },
+  {id:'disco',     name:()=>T.wDisco,     emoji:'🪩',mut:'disco',     col:'#f0f' },
+  {id:'aurora',    name:()=>T.wAurora,    emoji:'🌌',mut:'aurora',    col:'#0fa' },
 ];
 
 // Mutation info: icon + multiplier + glow
@@ -708,10 +759,16 @@ const MUT_DATA={
   hydrated:   {icon:'💧',mult:2,   glow:'rgba(0,180,255,0.55)',  label:()=>T.mHydrated  },
   misty:      {icon:'🌫',mult:1.5, glow:'rgba(180,180,180,0.4)', label:()=>T.mMisty     },
   windstruck: {icon:'🌪',mult:3.5, glow:'rgba(150,230,255,0.55)',label:()=>T.mWindstruck},
+  sandy:      {icon:'🏜',mult:2,   glow:'rgba(200,160,80,0.5)',  label:()=>T.mSandy     },
+  disco:      {icon:'🪩',mult:125, glow:'rgba(255,0,255,0.6)',   label:()=>T.mDisco,    rainbow:true},
+  aurora:     {icon:'🌌',mult:90,  glow:'rgba(0,255,160,0.6)',   label:()=>T.mAurora    },
   // FUSION mutations (added on top of source mutations, source kept)
   frozen:     {icon:'🧊',mult:25,  glow:'rgba(0,240,255,0.7)',   label:()=>T.mFrozen,   fusion:true},
   twisted:    {icon:'🌀',mult:30,  glow:'rgba(100,200,255,0.7)', label:()=>T.mTwisted,  fusion:true},
   pollinated: {icon:'🐝',mult:2,   glow:'rgba(255,220,0,0.55)',  label:()=>T.mPollinated},
+  mud:        {icon:'🟤',mult:5,   glow:'rgba(120,80,30,0.6)',   label:()=>T.mMud,      fusion:true},
+  clay:       {icon:'🏺',mult:10,  glow:'rgba(180,100,60,0.6)',  label:()=>T.mClay,     fusion:true},
+  pot:        {icon:'🪴',mult:50,  glow:'rgba(210,140,80,0.7)',  label:()=>T.mPot,      fusion:true},
 };
 
 /* ═══════════════════════════════════════
@@ -724,7 +781,8 @@ let G={
   wxDuration:0,
   wxCycleNext:600,
   mutTimer:0,
-  bloodMoonDay:3, // blood moon every 2 nights, first at night of day 3
+  bloodMoonChance:0.45, // 45% chance each night is a blood moon
+  shopMode:'day', // persisted: 'day' | 'moon' | 'blood'
   compactNums:false,
   shop:[], plots:Array(50).fill(null).map(()=>({plant:null})),
   inv:[], bar:Array(10).fill(null), selSlot:null,
@@ -788,9 +846,10 @@ function sanitize(s){
     s.money=Math.max(0,Number(s.money)||50);
     s.day=Math.max(1,Math.round(Number(s.day)||1));
     s.tod=Math.min(1,Math.max(0,Number(s.tod)||0));
-    // Blood moon: every 2 nights, first at night of day 3
-    if(!s.bloodMoonDay||s.bloodMoonDay<3)s.bloodMoonDay=3;
-    while(s.bloodMoonDay<=s.day)s.bloodMoonDay+=2;
+    // Blood moon: 45% chance per night (no day scheduling needed)
+    if(!s.bloodMoonChance)s.bloodMoonChance=0.45;
+    // Shop mode persistence
+    if(!s.shopMode)s.shopMode='day';
   }catch(e){console.warn('Sanitize error',e);}
   return s;
 }
@@ -1022,6 +1081,10 @@ const TRACKS={
   main:['Grow a Garden Soundtrack - Main Theme.mp3','Grow a Garden Soundtrack - Main Theme 4.mp3'],
   night:['Grow a Garden Soundtrack - Night Theme 1.mp3','Grow a Garden Soundtrack - Night Theme 2.mp3'],
   bee:['bee event.mp3'],
+  sandstorm:['Sandstorm.mp3'],
+  frost:['Ice.mp3'],
+  disco:['Disco.mp3'],
+  aurora:['Aurora.mp3'],
 };
 let audioEl=null,curTrackType=null,tidxDay=0,tidxNight=0,muSwitch=null;
 function buildAudio(){
@@ -1072,22 +1135,46 @@ function setWeather(w, active){
   G.weather=w;G.wxActive=active;
   document.getElementById('wx-name').textContent=w.emoji+' '+w.name()+(active?'':(IS_FR?' (accalmie)':' (clearing)'));
   parts=[];lightningTimer=0;nextLightningTime=2+Math.random()*4;
-  // Reset bee/tornado state on new weather
+  // Reset bee/tornado/sandstorm state on new weather
   tornadoActive=false;
   if(!active||w.id!=='bee'){bees=[];}
   beeShopHidden=false;
+  // Remove overlays if switching away
+  if(!active||w.id!=='sandstorm') document.body.classList.remove('sandstorm');
+  if(!active||w.id!=='disco')     document.body.classList.remove('disco');
+  if(!active||w.id!=='aurora')    document.body.classList.remove('aurora');
   if(active){
     if(w.id==='tornado'){spawnTornado();}
     if(w.id==='bee'){
       beeEventActive=true;bees=[];spawnBees();
-      switchMusic('bee'); // uses bee track 
+      switchMusic('bee');
       // Update shop header
       document.getElementById('seed-hdr').style.background='#443300';
       document.getElementById('seed-shop-title').textContent=IS_FR?'🌻 BOUTIQUE FLEURS':'🌻 FLOWER SHOP';
       if(document.getElementById('seed-shop-title-m'))document.getElementById('seed-shop-title-m').textContent=IS_FR?'🌻 FLEURS':'🌻 FLOWERS';
       renderSeedShop();
     }
+    if(w.id==='sandstorm'){
+      document.body.classList.add('sandstorm');
+      switchMusic('sandstorm');
+    }
+    if(w.id==='frost'){
+      switchMusic('frost');
+    }
+    if(w.id==='disco'){
+      document.body.classList.add('disco');
+      switchMusic('disco');
+    }
+    if(w.id==='aurora'){
+      document.body.classList.add('aurora');
+      switchMusic('aurora');
+    }
     spawnWeatherParts(w);
+  } else {
+    // Clearing — restore appropriate music
+    if(w.id==='sandstorm'||w.id==='frost'||w.id==='disco'||w.id==='aurora'){
+      switchMusic(G.isNight?'night':'main');
+    }
   }
 }
 
@@ -1117,6 +1204,22 @@ function spawnWeatherParts(w){
   } else if(w.id==='bee'){
     // Warm golden shimmer
     for(let i=0;i<30;i++) parts.push({type:'spark',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:-0.2-Math.random()*0.3,r:1.5+Math.random()*2,a:0.2+Math.random()*0.3,c:Math.random()<0.5?'#ffdd44':'#ffaa00',life:1,maxLife:80+Math.random()*60});
+  } else if(w.id==='sandstorm'){
+    // Sand grains falling/drifting from top, blown sideways
+    for(let i=0;i<200;i++) parts.push({type:'sand',x:Math.random()*W,y:Math.random()*H,vx:3+Math.random()*4,vy:1.5+Math.random()*2.5,r:1+Math.random()*2,a:0.3+Math.random()*0.45,c:Math.random()<0.5?'#c8a050':'#e0c070'});
+  } else if(w.id==='disco'){
+    // Disco balls: spinning light beams + bouncing sparkles
+    const discoCols=['#ff00cc','#ff6600','#ffee00','#00ff88','#00ccff','#aa00ff','#ff0066'];
+    for(let i=0;i<120;i++){
+      const c=discoCols[i%discoCols.length];
+      parts.push({type:'disco',x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*2.5,vy:(Math.random()-0.5)*2.5,r:2+Math.random()*3,a:0.7+Math.random()*0.3,c,life:1,maxLife:40+Math.random()*60,cIdx:i%discoCols.length,cols:discoCols});
+    }
+  } else if(w.id==='aurora'){
+    // Wavy ribbons of colour drifting across the top of the screen
+    const auroraCols=['#00ffaa','#00ccff','#8800ff','#00ff88','#44ffdd'];
+    for(let i=0;i<60;i++){
+      parts.push({type:'aurora',x:Math.random()*W,y:H*0.05+Math.random()*H*0.45,vx:0.3+Math.random()*0.4,vy:0,r:30+Math.random()*60,a:0.05+Math.random()*0.08,c:auroraCols[i%auroraCols.length],wave:Math.random()*Math.PI*2,waveSpeed:0.02+Math.random()*0.02,waveAmp:18+Math.random()*25});
+    }
   }
 }
 
@@ -1202,18 +1305,29 @@ function tickParts(){
   parts.forEach(p=>{
     p.x+=p.vx; p.y+=p.vy;
     if(p.spin!==undefined) p.spin+=p.dspin||0;
-    if(p.type==='heat'||p.type==='spark'){
+    if(p.type==='heat'||p.type==='spark'||p.type==='disco'){
       p.life-=1/p.maxLife;
-      p.a=Math.max(0,p.life*(p.type==='heat'?0.28:0.6));
+      p.a=Math.max(0,p.life*(p.type==='heat'?0.28:0.8));
       if(p.life<=0){
-        p.life=1; p.maxLife=50+Math.random()*80;
+        p.life=1; p.maxLife=40+Math.random()*60;
         if(p.type==='heat'){p.x=Math.random()*W;p.y=H*0.4+Math.random()*H*0.6;}
+        else if(p.type==='disco'){
+          p.x=Math.random()*W;p.y=Math.random()*H;
+          p.vx=(Math.random()-0.5)*2.5;p.vy=(Math.random()-0.5)*2.5;
+          p.cIdx=(p.cIdx+1)%p.cols.length;p.c=p.cols[p.cIdx];
+        }
         else{p.x=Math.random()*W;p.y=H*0.2+Math.random()*H*0.7;}
       }
+    }
+    if(p.type==='aurora'){
+      p.wave+=p.waveSpeed;
+      p.vy=Math.sin(p.wave)*0.4;
     }
     if(p.type==='rain'){if(p.y>H+p.len){p.y=-p.len;p.x=Math.random()*W;}if(p.x<-30)p.x=W+30;}
     else if(p.type==='flake'){if(p.y>H){p.y=-10;p.x=Math.random()*W;}if(p.x<0)p.x=W;if(p.x>W)p.x=0;}
     else if(p.type==='fog'){if(p.x>W+p.r)p.x=-p.r;}
+    else if(p.type==='sand'){if(p.x>W+10){p.x=-10;p.y=Math.random()*H*0.6;}if(p.y>H){p.y=-5;p.x=Math.random()*W;}}
+    else if(p.type==='aurora'){if(p.x>W+p.r)p.x=-p.r;}
   });
 }
 
@@ -1243,8 +1357,41 @@ function drawParts(){
       const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
       grad.addColorStop(0,p.c); grad.addColorStop(1,'transparent');
       ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    } else if(p.type==='sand'){
+      // Oval sand grain, slightly elongated in direction of travel
+      ctx.fillStyle=p.c;
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(Math.atan2(p.vy,p.vx));
+      ctx.beginPath();
+      ctx.ellipse(0,0,p.r*1.6,p.r*0.7,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    } else if(p.type==='disco'){
+      // Bright glowing sparkle with a 4-point star shape
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.shadowBlur=12; ctx.shadowColor=p.c;
+      ctx.fillStyle=p.c;
+      ctx.beginPath();
+      for(let a=0;a<8;a++){
+        const ang=a*Math.PI/4;
+        const r2=a%2===0?p.r:p.r*0.35;
+        a===0?ctx.moveTo(Math.cos(ang)*r2,Math.sin(ang)*r2):ctx.lineTo(Math.cos(ang)*r2,Math.sin(ang)*r2);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.restore();
+    } else if(p.type==='aurora'){
+      // Soft glowing ribbon
+      const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      grad.addColorStop(0,p.c);
+      grad.addColorStop(1,'transparent');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.ellipse(p.x,p.y,p.r,p.r*0.22,0,0,Math.PI*2);
+      ctx.fill();
     } else {
-      // heat shimmer / sparkle: soft glow dot
       ctx.shadowBlur=6; ctx.shadowColor=p.c;
       ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
       ctx.shadowBlur=0;
@@ -1383,6 +1530,24 @@ function checkFusions(plant){
     notify('⭐ '+sd.name+' — '+(IS_FR?'Céleste ×300 !':'Celestial ×300!'));
     sfx('mutate');
   }
+  // sandy + hydrated → mud ×5
+  if(m.includes('sandy')&&m.includes('hydrated')&&!m.includes('mud')){
+    plant.muts.push('mud');
+    notify('🟤 '+(IS_FR?'Fusion : Boueux ×5 !':'Fusion: Muddy ×5!'));
+    sfx('mutate');
+  }
+  // mud + scorched → clay ×10
+  if(m.includes('mud')&&m.includes('scorched')&&!m.includes('clay')){
+    plant.muts.push('clay');
+    notify('🏺 '+(IS_FR?'Fusion : Argileux ×10 !':'Fusion: Clay ×10!'));
+    sfx('mutate');
+  }
+  // clay + twisted → pot ×50
+  if(m.includes('clay')&&m.includes('twisted')&&!m.includes('pot')){
+    plant.muts.push('pot');
+    notify('🪴 '+(IS_FR?'Fusion : En Pot ×50 !':'Fusion: Potted ×50!'));
+    sfx('mutate');
+  }
 }
 
 // Periodic fusion check (every 30s) — re-checks all plants
@@ -1503,8 +1668,10 @@ function renderPlots(){
       if(p.fav)div.classList.add('fav-plot');
       if(G.moveMode&&G.moveSrc===idx)div.style.borderColor='#fa0';
 
+      const hasDisco=(p.muts||[]).includes('disco');
+      if(hasDisco) div.classList.add('disco-plant');
       const glow=mutGlowStyle(p.muts);
-      if(glow)div.style.boxShadow=glow;
+      if(glow&&!hasDisco)div.style.boxShadow=glow;
 
       const ico=done?sd.icon:sd.seedIcon;
       const sz='sz-'+p.size;
@@ -1674,9 +1841,8 @@ function tickDN(dt){
   const dayEl=document.getElementById('day-lbl');
 
   if(G.isNight&&!was){
-    // Transitioning to night: check if this is a blood moon night
-    // Blood moon on every even night cycle starting from day 3 (days 3,5,7,9...)
-    const thisIsBloodMoon = G.bloodMoonDay>0 && G.day>=G.bloodMoonDay;
+    // Transitioning to night: 45% chance of blood moon
+    const thisIsBloodMoon = Math.random() < 0.45;
     document.body.classList.add('night');
     if(thisIsBloodMoon){
       isBloodMoon=true;
@@ -1684,12 +1850,14 @@ function tickDN(dt){
       if(G.musicOn)switchMusic('night');
       notify('🩸 '+(IS_FR?'Lune de sang ! Mutation Ensanglantée ×25 !':'Blood Moon! Bloodlit mutation ×25!'));
       bloodShopActive=true; moonShopActive=false;
+      G.shopMode='blood';
       setShopHeader('blood');
     } else {
       isBloodMoon=false;
       document.body.classList.remove('bloodmoon');
       switchMusic('night');
       moonShopActive=true; bloodShopActive=false;
+      G.shopMode='moon';
       setShopHeader('moon');
     }
     renderSeedShop();
@@ -1698,9 +1866,9 @@ function tickDN(dt){
     document.body.classList.remove('bloodmoon');
     isBloodMoon=false;
     moonShopActive=false; bloodShopActive=false;
+    G.shopMode='day';
     G.day++;
-    // Advance blood moon: every 2 days
-    if(G.day>=G.bloodMoonDay) G.bloodMoonDay=G.day+2;
+    // No longer need bloodMoonDay scheduling
     switchMusic('main');
     setShopHeader('day');
     renderSeedShop();
@@ -1776,6 +1944,10 @@ function tickWeather(dt){
       G.weather=WEATHERS[0];
       document.getElementById('wx-name').textContent=IS_FR?'☀ Dégagé (accalmie)':'☀ Clear (downtime)';
       parts=[];
+      // Clean up sandstorm overlay
+      document.body.classList.remove('sandstorm');
+      document.body.classList.remove('disco');
+      document.body.classList.remove('aurora');
       // Clean up bee event
       if(beeEventActive){
         beeEventActive=false;beeShopHidden=false;bees=[];
@@ -1785,6 +1957,10 @@ function tickWeather(dt){
         if(document.getElementById('seed-shop-title-m'))document.getElementById('seed-shop-title-m').textContent=IS_FR?'🔵 GRAINES':'🔵 SEEDS';
         if(!isBloodMoon)switchMusic(G.isNight?'night':'main');
         renderSeedShop();
+      }
+      // Restore music after sandstorm, frost, disco, or aurora
+      if(curTrackType==='sandstorm'||curTrackType==='frost'||curTrackType==='disco'||curTrackType==='aurora'){
+        switchMusic(G.isNight?'night':'main');
       }
       tornadoActive=false;
     }
@@ -1990,10 +2166,8 @@ function init(){
   // wx-timer label prefix
   document.getElementById('wx-timer-label').textContent=IS_FR?'Prochain : ':'Next: ';
 
-  // Init blood moon: first at night of day 3, then every 2 days
-  if(!G.bloodMoonDay||G.bloodMoonDay<2) G.bloodMoonDay=2;
-  // If we're already past the scheduled blood moon, advance it
-  while(G.bloodMoonDay<=G.day) G.bloodMoonDay+=1;
+  // Restore night body class
+  document.body.classList.toggle('night', G.isNight);
 
   // Init blood moon overlay element (may not exist if loaded from older HTML)
   if(!document.getElementById('bloodmoon-overlay')){
@@ -2002,8 +2176,21 @@ function init(){
     document.body.appendChild(ov);
   }
 
-  document.body.classList.toggle('night',G.isNight);
-  if(isBloodMoon)document.body.classList.add('bloodmoon');
+  // Restore shop mode from saved state (so reload keeps the active event shop)
+  if(G.isNight && G.shopMode==='blood'){
+    isBloodMoon=true;
+    bloodShopActive=true; moonShopActive=false;
+    document.body.classList.add('bloodmoon');
+    setShopHeader('blood');
+  } else if(G.isNight && G.shopMode==='moon'){
+    isBloodMoon=false;
+    moonShopActive=true; bloodShopActive=false;
+    setShopHeader('moon');
+  } else {
+    isBloodMoon=false;
+    moonShopActive=false; bloodShopActive=false;
+    setShopHeader('day');
+  }
   renderAll();
   document.addEventListener('click',function startMu(){buildAudio();switchMusic(G.isNight?'night':'main');document.removeEventListener('click',startMu);},{once:true});
   lastT=performance.now();requestAnimationFrame(loop);
